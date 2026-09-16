@@ -103,8 +103,8 @@ const ReportsApp = (() => {
       <div class="card" id="rp-empty" style="display:none">
         <div class="empty-state">
           <i class="fas fa-file-import"></i>
-          <h4>No report generated yet</h4>
-          <p>Select your filters above and click <strong>Generate Report</strong>.</p>
+          <h4 id="rp-empty-title">No report generated yet</h4>
+          <p id="rp-empty-msg">Select your filters above and click <strong>Generate Report</strong>.</p>
         </div>
       </div>
     `;
@@ -267,8 +267,10 @@ const ReportsApp = (() => {
         document.getElementById('rp-toolbar').style.display = 'none';
         document.getElementById('rp-table-card').style.display = 'none';
         document.getElementById('rp-charts-wrap').style.display = 'none';
+        document.getElementById('rp-empty-title').textContent = 'No Report Data';
+        document.getElementById('rp-empty-msg').textContent = 'No attendance records match the selected filters.';
         document.getElementById('rp-empty').style.display = 'block';
-        Toast.info('No attendance records found.');
+        Toast.info('No Report Data');
         return;
       }
 

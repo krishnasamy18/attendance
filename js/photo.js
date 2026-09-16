@@ -18,12 +18,6 @@ window.ProfilePhoto = (() => {
   const MAX_SIZE      = 5 * 1024 * 1024; // 5 MB
   const ALLOWED_TYPES  = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
-  const DEFAULT_SRC = {
-    Student: 'assets/images/default-student.png',
-    Staff:   'assets/images/default-staff.png',
-    HOD:     'assets/images/default-hod.png'
-  };
-
   /* ---------- Storage helpers (localStorage) ---------- */
 
   const keyFor  = (userId) => `${STORAGE_PREFIX}${userId}`;
@@ -52,21 +46,18 @@ window.ProfilePhoto = (() => {
 
   /* ---------- Public: read ---------- */
 
-  /** Stored photo data URL for userId, or null. */
   const get = (userId) => getStored(userId);
 
-  /** True if a photo has been uploaded for userId. */
   const has = (userId) => !!getStored(userId);
 
-  /** Effective src for the profile photo (stored data-URL or role default). */
-  const avatarSrc = (userId, role) => getStored(userId) || DEFAULT_SRC[role] || DEFAULT_SRC.Student;
+  const avatarSrc = (userId) => getStored(userId) || null;
 
   /* ---------- Public: write (backend-ready) ---------- */
 
   /**
    * Upload / change a profile photo.
-   * Backend-ready — replace the localStorage code inside reader.onload
-   * with: fetch('/api/profile/photo', { method:'POST', body: formData })
+   * Backend-ready: replace localStorage logic with
+   *   fetch('/api/profile/photo', { method:'POST', body: formData })
    */
   const changeProfilePhoto = (userId, imageFile) => new Promise((resolve, reject) => {
     const err = validateFile(imageFile);
@@ -87,8 +78,21 @@ window.ProfilePhoto = (() => {
   });
 
   /**
+   * Save a profile photo from a data URL.
+   * Backend-ready: replace with POST /api/profile/photo
+   */
+  const saveProfilePhoto = (userId, imageData) => {
+    if (setStored(userId, imageData)) {
+      syncSession(userId, imageData);
+      return Promise.resolve({ success: true, url: imageData });
+    }
+    return Promise.reject(new Error('Could not save the photo to browser storage.'));
+  };
+
+  /**
    * Remove a profile photo, reverting to the default avatar.
-   * Backend-ready — replace with: fetch(`/api/profile/photo?userId=${userId}`, { method:'DELETE' })
+   * Backend-ready: replace with
+   *   fetch(`/api/profile/photo?userId=${userId}`, { method:'DELETE' })
    */
   const removeProfilePhoto = (userId) => {
     clearStored(userId);
@@ -96,7 +100,6 @@ window.ProfilePhoto = (() => {
     return Promise.resolve({ success: true });
   };
 
-  /** Keep the session person object in sync so AppLayout reads it without re-reading localStorage on every avatar. */
   const syncSession = (userId, dataUrl) => {
     try {
       const raw = localStorage.getItem('attendance_session');
@@ -112,17 +115,6 @@ window.ProfilePhoto = (() => {
 
   /* ---------- Avatar HTML ---------- */
 
-  /**
-   * Render an avatar.
-   * @param {object} opts
-   *   userId  - account userId (e.g. 2021AI001)
-   *   name    - display name (for title / alt / fallback initials)
-   *   role    - Student | Staff | HOD
-   *   size    - px size (default 40)
-   *   sizeClass - 'lg' for large avatar (adds .avatar.lg)
-   *   className - extra classes to add to the avatar container
-   *   style   - extra inline styles
-   */
   const avatarHtml = ({ userId, name, role, size = 40, sizeClass = '', className = '', style = '' }) => {
     const sz   = sizeClass === 'xl' ? 110 : sizeClass === 'lg' ? 88 : size;
     const fs   = Math.round(sz / 2.8);
@@ -139,7 +131,6 @@ window.ProfilePhoto = (() => {
     return `<span class="${cls} avatar-default" data-role="${role}" style="${box}"${title}><i class="fas ${iconClass}"></i></span>`;
   };
 
-  /* ---------- Small badge version for tables (tighter) ---------- */
   const avatarBadge = ({ userId, name, role, size = 34 }) => {
     const fs = Math.round(size / 2.6);
     const box = `width:${size}px;height:${size}px;font-size:${fs}px`;
@@ -156,23 +147,21 @@ window.ProfilePhoto = (() => {
 
   /* ---------- Refresh helpers ---------- */
 
-  /** Re-render every element marked with [data-photo-user] on the current page. */
   const refreshAll = (userId) => {
     document.querySelectorAll(`[data-photo-user="${CSS.escape(userId)}"]`).forEach((el) => {
-      const role   = el.dataset.photoRole || 'Student';
-      const size   = parseInt(el.dataset.photoSize || '40', 10);
+      const role      = el.dataset.photoRole || 'Student';
+      const size      = parseInt(el.dataset.photoSize || '40', 10);
       const sizeClass = el.dataset.photoSizeClass || '';
-      const cls    = el.dataset.photoClass || '';
-      const name   = el.dataset.photoName || '';
+      const cls       = el.dataset.photoClass || '';
+      const name      = el.dataset.photoName || '';
       el.outerHTML = avatarHtml({ userId, name, role, size, sizeClass, className: cls });
     });
   };
 
-  /** Refresh the header user avatar and profile dropdown avatar. */
   const refreshHeader = () => {
     const s = (() => { try { return JSON.parse(localStorage.getItem('attendance_session')); } catch { return null; } })();
     if (!s) return;
-    // header-user avatar
+
     const hu = document.getElementById('header-user');
     if (hu) {
       const old = hu.querySelector('.avatar');
@@ -181,7 +170,7 @@ window.ProfilePhoto = (() => {
         old.outerHTML = newAv;
       }
     }
-    // profile dropdown avatar
+
     const ddAvatar = document.querySelector('.profile-dd-head .avatar');
     if (ddAvatar) {
       const newAv = avatarHtml({ userId: s.userId, name: s.name, role: s.role, size: 42 });
@@ -189,128 +178,187 @@ window.ProfilePhoto = (() => {
     }
   };
 
-  /* ---------- Modal helpers ---------- */
+  /* ---------- Step 1: Selection modal ---------- */
 
-  /**
-   * Open the "Change Profile Photo" modal.
-   * @param {object} opts
-   *   userId  - account userId
-   *   name    - user name
-   *   role    - role string
-   *   onChange - callback after a successful save, receives { url }
-   */
   const openChangePhotoModal = ({ userId, name, role, onChange }) => {
-    let selectedFile = null;
-    let previewDataUrl = null;
-    const currentSrc = avatarSrc(userId, role);
+    const hasPhoto = has(userId);
 
     const body = `
-      <div class="pp-modal-preview">
-        ${avatarHtml({ userId, name, role, size: 128, className: 'pp-modal-img' })}
+      <div class="pp-select-current">
+        <div class="pp-select-current-label">Current Photo</div>
+        <div class="pp-select-current-img">
+          ${avatarHtml({ userId, name, role, size: 100, className: 'pp-current-avatar' })}
+        </div>
       </div>
-      <label class="pp-dropzone" id="pp-dropzone" for="pp-file-input" tabindex="0" role="button" aria-label="Choose or drop an image">
-        <i class="fas fa-cloud-arrow-up pp-dropzone-icon"></i>
-        <span class="pp-dropzone-title">Drag &amp; drop your photo here</span>
-        <span class="pp-dropzone-sub">or click to browse files</span>
-      </label>
-      <input type="file" id="pp-file-input" accept="image/jpeg,image/png,image/webp" style="display:none">
-      <p id="pp-modal-hint" class="pp-modal-hint">Supported: JPG, JPEG, PNG, WEBP &middot; Maximum size: 5 MB</p>
+      <div class="pp-select-options">
+        <button class="pp-select-option" id="pp-choose-device" type="button">
+          <span class="pp-select-icon"><i class="fas fa-image"></i></span>
+          <span class="pp-select-text">
+            <span class="pp-select-label">Choose from Device</span>
+            <span class="pp-select-desc">Select a photo from your gallery or files</span>
+          </span>
+          <i class="fas fa-chevron-right pp-select-arrow"></i>
+        </button>
+        <button class="pp-select-option" id="pp-take-photo" type="button">
+          <span class="pp-select-icon pp-select-icon--camera"><i class="fas fa-camera"></i></span>
+          <span class="pp-select-text">
+            <span class="pp-select-label">Take Photo</span>
+            <span class="pp-select-desc">Use your device camera</span>
+          </span>
+          <i class="fas fa-chevron-right pp-select-arrow"></i>
+        </button>
+        ${hasPhoto ? `
+        <button class="pp-select-option pp-select-option--danger" id="pp-remove-photo" type="button">
+          <span class="pp-select-icon pp-select-icon--danger"><i class="fas fa-trash-can"></i></span>
+          <span class="pp-select-text">
+            <span class="pp-select-label">Remove Photo</span>
+            <span class="pp-select-desc">Revert to the placeholder avatar</span>
+          </span>
+          <i class="fas fa-chevron-right pp-select-arrow"></i>
+        </button>` : ''}
+      </div>
+      <p class="pp-modal-hint">Supported: JPG, JPEG, PNG, WEBP &middot; Max size: 5 MB</p>
     `;
 
-    const footer = `
-      <button class="btn btn-outline" data-pp-cancel>Cancel</button>
-      <button class="btn btn-primary" id="pp-save-btn" disabled><i class="fas fa-save"></i> Save Photo</button>
-    `;
+    const footer = `<button class="btn btn-outline" data-pp-cancel>Cancel</button>`;
 
     Modal.open({ title: 'Change Profile Photo', body, footer });
 
     const ov = document.querySelector('.modal-overlay.active');
     if (!ov) return;
-    const fileInput = ov.querySelector('#pp-file-input');
-    const dropzone  = ov.querySelector('#pp-dropzone');
-    const saveBtn   = ov.querySelector('#pp-save-btn');
-    const hint      = ov.querySelector('#pp-modal-hint');
-    const preview   = ov.querySelector('.pp-modal-preview');
 
     ov.querySelector('[data-pp-cancel]').addEventListener('click', Modal.close);
 
-    const handleFiles = () => {
-      const file = fileInput.files && fileInput.files[0];
-      if (!file) { selectedFile = null; saveBtn.disabled = true; return; }
+    /* -- hidden file inputs (created dynamically, removed on close) -- */
+
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/jpeg,image/jpg,image/png,image/webp';
+    fileInput.style.display = 'none';
+    document.body.appendChild(fileInput);
+
+    const cameraInput = document.createElement('input');
+    cameraInput.type = 'file';
+    cameraInput.accept = 'image/jpeg,image/jpg,image/png,image/webp';
+    cameraInput.setAttribute('capture', 'user');
+    cameraInput.style.display = 'none';
+    document.body.appendChild(cameraInput);
+
+    const cleanup = () => { fileInput.remove(); cameraInput.remove(); };
+
+    /* -- Choose from Device -- */
+    ov.querySelector('#pp-choose-device').addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    /* -- Take Photo -- */
+    ov.querySelector('#pp-take-photo').addEventListener('click', () => {
+      if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
+        cameraInput.click();
+      } else {
+        Toast.error('Camera access is unavailable. Please choose a photo from your device.');
+      }
+    });
+
+    /* -- shared file handler -- */
+    const handleFile = (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
 
       const err = validateFile(file);
       if (err) {
         Toast.error(err);
-        fileInput.value = '';
-        selectedFile = null;
-        saveBtn.disabled = true;
+        e.target.value = '';
         return;
       }
 
-      selectedFile = file;
-      const reader = new FileReader();
-      reader.onload = () => {
-        previewDataUrl = reader.result;
-        preview.innerHTML = `<img src="${previewDataUrl}" class="avatar avatar-lg pp-modal-img" alt="Photo preview" style="width:128px;height:128px;border-radius:50%;object-fit:cover">`;
-        saveBtn.disabled = false;
-      };
-      reader.readAsDataURL(file);
+      Modal.close();
+      cleanup();
+      openPreviewModal({ userId, name, role, file, onChange });
     };
 
-    fileInput.addEventListener('change', handleFiles);
+    fileInput.addEventListener('change', handleFile);
+    cameraInput.addEventListener('change', handleFile);
 
-    // Drag & drop support
-    ['dragenter', 'dragover'].forEach((evt) =>
-      dropzone.addEventListener(evt, (e) => {
-        e.preventDefault();
-        dropzone.classList.add('dragover');
-      })
-    );
-    ['dragleave', 'drop'].forEach((evt) =>
-      dropzone.addEventListener(evt, (e) => {
-        e.preventDefault();
-        dropzone.classList.remove('dragover');
-      })
-    );
-    dropzone.addEventListener('drop', (e) => {
-      const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-      if (!file) return;
-      const dt = new DataTransfer();
-      dt.items.add(file);
-      fileInput.files = dt.files;
-      handleFiles();
-    });
-    dropzone.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
-    });
-
-    saveBtn.addEventListener('click', async () => {
-      if (!selectedFile) return;
-      try {
-        Buttons.loading(saveBtn, 'Uploading...');
-        await changeProfilePhoto(userId, selectedFile);
+    /* -- Remove Photo -- */
+    const removeBtn = ov.querySelector('#pp-remove-photo');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', () => {
         Modal.close();
-        Toast.success('Profile photo updated successfully.');
-        refreshAll(userId);
-        refreshHeader();
-        if (typeof onChange === 'function') onChange({ url: previewDataUrl });
-      } catch (e) {
-        Toast.error(e.message || 'Could not update photo.');
-        Buttons.reset(saveBtn);
-      }
+        cleanup();
+        openRemovePhotoModal({ userId, onRemoved: onChange });
+      });
+    }
+
+    /* -- ensure cleanup when modal closes via overlay click or X -- */
+    const origClose = Modal.close;
+    const observer = new MutationObserver(() => {
+      if (!ov.classList.contains('active')) { observer.disconnect(); cleanup(); }
     });
+    observer.observe(ov, { attributes: true, attributeFilter: ['class'] });
   };
 
-  /**
-   * Open a confirmation modal to remove the profile photo.
-   * @param {object} opts
-   *   userId    - account userId
-   *   onRemoved - callback after successful removal
-   */
+  /* ---------- Step 2: Preview modal ---------- */
+
+  const openPreviewModal = ({ userId, name, role, file, onChange }) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const previewDataUrl = reader.result;
+
+      const body = `
+        <div class="pp-preview-label">Preview Profile Photo</div>
+        <div class="pp-preview-img-wrap">
+          <img src="${previewDataUrl}" class="pp-preview-img" alt="Profile photo preview">
+        </div>
+      `;
+
+      const footer = `
+        <div class="pp-preview-footer">
+          <div class="pp-preview-footer-left">
+            <button class="btn btn-outline" id="pp-preview-change"><i class="fas fa-camera"></i> Change</button>
+            <button class="btn btn-outline" id="pp-preview-cancel">Cancel</button>
+          </div>
+          <button class="btn btn-primary" id="pp-preview-save"><i class="fas fa-save"></i> Save Photo</button>
+        </div>
+      `;
+
+      Modal.open({ title: 'Preview Profile Photo', body, footer });
+
+      const ov = document.querySelector('.modal-overlay.active');
+      if (!ov) return;
+
+      ov.querySelector('#pp-preview-cancel').addEventListener('click', Modal.close);
+
+      ov.querySelector('#pp-preview-change').addEventListener('click', () => {
+        Modal.close();
+        setTimeout(() => openChangePhotoModal({ userId, name, role, onChange }), 200);
+      });
+
+      ov.querySelector('#pp-preview-save').addEventListener('click', async () => {
+        const saveBtn = ov.querySelector('#pp-preview-save');
+        try {
+          Buttons.loading(saveBtn, 'Saving...');
+          await changeProfilePhoto(userId, file);
+          Modal.close();
+          Toast.success('Profile photo updated successfully.');
+          refreshAll(userId);
+          refreshHeader();
+          if (typeof onChange === 'function') onChange({ url: previewDataUrl });
+        } catch (e) {
+          Toast.error(e.message || 'Could not update photo.');
+          Buttons.reset(saveBtn);
+        }
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  /* ---------- Remove confirmation ---------- */
+
   const openRemovePhotoModal = ({ userId, onRemoved }) => {
     Confirm.show({
       title: 'Remove Profile Photo',
-      message: 'Are you sure you want to remove your profile photo? Your avatar will revert to the default.',
+      message: 'Are you sure you want to remove your profile photo?',
       confirmText: 'Remove',
       confirmClass: 'btn-danger',
       onConfirm: async () => {
@@ -334,6 +382,7 @@ window.ProfilePhoto = (() => {
     refreshAll,
     refreshHeader,
     changeProfilePhoto,
+    saveProfilePhoto,
     removeProfilePhoto,
     validateFile,
     syncSession,

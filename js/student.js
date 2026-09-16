@@ -65,14 +65,7 @@ const StudentApp = (() => {
     const person = s.person;
     if (!person) return;
 
-    const records = DB.getStudentAttendance(person.id);
-    if (!records || records.length === 0) {
-      document.getElementById('stat-grid').innerHTML = `
-        <div class="card" style="grid-column:1/-1">
-          <div class="empty-state"><i class="fas fa-inbox"></i><h4>No attendance records found.</h4></div>
-        </div>`;
-      return;
-    }
+    const records = DB.getStudentAttendance(person.id) || [];
 
     const stats = attendanceStats(records);
 
@@ -114,14 +107,16 @@ const StudentApp = (() => {
 
     drawRing(document.getElementById('attendance-ring'), stats.percentage);
     const threshold = stats.percentage >= 75;
-    document.getElementById('ring-subtitle').textContent = threshold
-      ? 'Above the 75% attendance threshold. Well done!'
-      : 'Below the 75% attendance threshold. Please attend more classes.';
+    document.getElementById('ring-subtitle').textContent = stats.total === 0
+      ? 'No attendance records yet.'
+      : threshold
+        ? 'Above the 75% attendance threshold. Well done!'
+        : 'Below the 75% attendance threshold. Please attend more classes.';
 
     // Subject-wise
     const subjectRows = subjectWise(records);
     const tbody = document.querySelector('#subject-attendance-table tbody');
-    tbody.innerHTML = subjectRows.map((s) => {
+    tbody.innerHTML = subjectRows.length ? subjectRows.map((s) => {
       const st = Utils.pctStatus(s.percentage);
       return `
         <tr>
@@ -136,12 +131,12 @@ const StudentApp = (() => {
           <td><span class="badge ${st.cls}">${st.text}</span></td>
         </tr>
       `;
-    }).join('');
+    }).join('') : TableRenderer.emptyState(6, 'No Attendance Records');
 
     // Recent attendance (last 8)
     const recent = [...records].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 8);
     const recentBody = document.querySelector('#recent-attendance-table tbody');
-    recentBody.innerHTML = recent.map((r) => {
+    recentBody.innerHTML = recent.length ? recent.map((r) => {
       const st = Utils.statusInfo(r.status);
       const staffName = DB.getStaff().find((f) => f.id === r.staffId)?.name || '—';
       return `
@@ -153,7 +148,7 @@ const StudentApp = (() => {
           <td><span class="badge ${st.cls}">${st.label}</span></td>
         </tr>
       `;
-    }).join('');
+    }).join('') : TableRenderer.emptyState(5, 'No Attendance Records');
   };
 
   /* ---------- My Attendance (view) ---------- */
@@ -204,7 +199,7 @@ const StudentApp = (() => {
     `;
 
     const rows = subjectWise(records);
-    document.querySelector('#att-view-table tbody').innerHTML = rows.map((x) => {
+    document.querySelector('#att-view-table tbody').innerHTML = rows.length ? rows.map((x) => {
       const st = Utils.pctStatus(x.percentage);
       return `
         <tr>
@@ -219,7 +214,7 @@ const StudentApp = (() => {
           <td><span class="badge ${st.cls}">${st.text}</span></td>
         </tr>
       `;
-    }).join('');
+    }).join('') : TableRenderer.emptyState(6, 'No Attendance Records');
   };
 
   /* ---------- Attendance History ---------- */
@@ -344,7 +339,7 @@ const StudentApp = (() => {
       document.getElementById('hist-count').textContent = `${list.length} record(s)`;
 
       if (rows.length === 0) {
-        tbody.innerHTML = TableRenderer.emptyState(5, 'No attendance records found.');
+        tbody.innerHTML = TableRenderer.emptyState(5, 'No Attendance Records');
       } else {
         tbody.innerHTML = rows.map((r) => {
           const st = Utils.statusInfo(r.status);

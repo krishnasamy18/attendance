@@ -1116,66 +1116,174 @@ select.form-control {
   padding: 5px 12px;
 }
 
-.pp-modal-preview {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 16px;
-}
-
-.pp-modal-preview .avatar-lg,
-.pp-modal-preview img {
-  width: 128px;
-  height: 128px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
 .pp-modal-hint {
   text-align: center;
   font-size: 12px;
   color: var(--gray-500);
-  margin-bottom: 12px;
+  margin-top: 12px;
 }
 
-.pp-dropzone {
+/* --- Selection modal --- */
+
+.pp-select-current {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.pp-select-current-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 10px;
+}
+
+.pp-select-current-img {
+  display: flex;
+  justify-content: center;
+}
+
+.pp-select-current-img .avatar {
+  box-shadow: 0 0 0 4px var(--gray-100), var(--shadow);
+}
+
+.pp-select-options {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  border: 1.5px dashed var(--gray-300);
-  border-radius: var(--radius-sm);
-  background: var(--gray-50);
-  padding: 18px 16px;
-  margin-bottom: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-align: center;
+  gap: 6px;
 }
 
-.pp-dropzone:hover,
-.pp-dropzone:focus-visible,
-.pp-dropzone.dragover {
+.pp-select-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-200);
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+  width: 100%;
+}
+
+.pp-select-option:hover {
   border-color: var(--primary);
   background: var(--primary-bg);
-  outline: none;
 }
 
-.pp-dropzone-icon {
-  font-size: 22px;
+.pp-select-option--danger:hover {
+  border-color: var(--danger);
+  background: var(--danger-light);
+}
+
+.pp-select-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--primary-light);
   color: var(--primary);
-  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
 }
 
-.pp-dropzone-title {
-  font-size: 13px;
+.pp-select-icon--camera {
+  background: var(--secondary-light);
+  color: var(--secondary-dark);
+}
+
+.pp-select-icon--danger {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.pp-select-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.pp-select-label {
+  font-size: 14px;
   font-weight: 600;
-  color: var(--dark-2);
+  color: var(--dark);
 }
 
-.pp-dropzone-sub {
+.pp-select-desc {
   font-size: 12px;
   color: var(--gray-500);
+}
+
+.pp-select-arrow {
+  font-size: 12px;
+  color: var(--gray-400);
+  flex-shrink: 0;
+}
+
+.pp-select-option:hover .pp-select-arrow {
+  color: var(--primary);
+}
+
+.pp-select-option--danger:hover .pp-select-arrow {
+  color: var(--danger);
+}
+
+/* --- Preview modal --- */
+
+.pp-preview-label {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 14px;
+}
+
+.pp-preview-img-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.pp-preview-img {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 0 4px var(--gray-100), var(--shadow-lg);
+}
+
+.pp-preview-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 10px;
+}
+
+.pp-preview-footer-left {
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 480px) {
+  .pp-preview-footer {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+  .pp-preview-footer-left {
+    width: 100%;
+  }
+  .pp-preview-footer-left .btn,
+  .pp-preview-footer > .btn {
+    flex: 1;
+  }
 }
 
 .avatar-default {

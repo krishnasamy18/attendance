@@ -108,7 +108,7 @@ const TimetableApp = (() => {
       });
 
       if (!anyCell) {
-        html += `<tr><td colspan="6"><div class="empty-state"><i class="fas fa-calendar-xmark"></i><h4>No timetable entries found.</h4></div></td></tr>`;
+        html += `<tr><td colspan="6"><div class="empty-state"><i class="fas fa-calendar-xmark"></i><h4>No Timetable Available</h4></div></td></tr>`;
       }
 
       html += `</tbody>`;
@@ -123,7 +123,7 @@ const TimetableApp = (() => {
       });
     }
 
-    render(s.role === 'HOD' ? 'I' : null);
+    render(s.role === 'HOD' ? (classes[0] ? classes[0].id : '') : null);
   };
 
   if (document.readyState === 'loading') {

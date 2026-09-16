@@ -541,6 +541,12 @@ const AppLayout = {
     // Fill notifications list
     const notifList = document.getElementById('notif-list');
     if (notifList) notifList.innerHTML = buildNotifications(session);
+    const notifBadge = document.getElementById('notif-badge');
+    if (notifBadge) {
+      const count = notifList ? notifList.querySelectorAll('.notif-item').length : 0;
+      notifBadge.textContent = count;
+      notifBadge.style.display = count ? '' : 'none';
+    }
 
     // Fill role in header dropdown
     const ddRole = document.getElementById('dd-role');
@@ -630,7 +636,7 @@ const AppLayout = {
         <div class="top-header-right">
           <button class="header-icon-btn" id="notif-btn" aria-label="Notifications">
             <i class="fas fa-bell"></i>
-            <span class="notif-badge">3</span>
+            <span class="notif-badge" id="notif-badge"></span>
           </button>
           <button class="header-icon-btn" id="profile-btn" aria-label="Account">
             <i class="fas fa-circle-user"></i>
@@ -675,26 +681,53 @@ const AppLayout = {
 
 function buildNotifications(session) {
   const role = session.role;
-  let items = [];
+  const person = session.person || {};
+  const now = 'Just now';
+  const items = [];
+
+  const dayAbbr = () => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date().getDay()];
 
   if (role === 'Student') {
-    items = [
-      { icon: 'fa-bell text-primary', text: 'Your overall attendance is above the threshold. Keep it up!', time: '2h ago' },
-      { icon: 'fa-circle-exclamation text-danger', text: 'You missed Artificial Intelligence on Monday.', time: '1d ago' },
-      { icon: 'fa-circle-info text-info', text: 'Timetable updates published for the new academic term.', time: '2d ago' }
-    ];
+    const recs = session.personId ? DB.getStudentAttendance(session.personId) : [];
+    if (recs.length === 0) {
+      items.push({ icon: 'fa-bell text-muted', text: 'No attendance records yet.', time: now });
+    } else {
+      const present = recs.filter((r) => r.status !== 'absent').length;
+      const pct = Utils.percentage(present, recs.length);
+      if (pct < 75) {
+        items.push({ icon: 'fa-triangle-exclamation text-danger', text: `Your attendance is ${pct}%. It is below the 75% threshold.`, time: now });
+      } else {
+        items.push({ icon: 'fa-circle-check text-success', text: `Your attendance is ${pct}%. Keep it up!`, time: now });
+      }
+    }
   } else if (role === 'Staff') {
-    items = [
-      { icon: 'fa-clock text-warning', text: 'Attendance pending for Machine Learning - III Sem (Hour 3).', time: 'Just now' },
-      { icon: 'fa-circle-check text-success', text: 'Attendance submitted for Data Structures.', time: '1h ago' },
-      { icon: 'fa-users text-primary', text: 'Student list updated for II Semester.', time: '1d ago' }
-    ];
+    const subjectCodes = DB.getSubjects().filter((s) => (person.subjects || []).includes(s.name)).map((s) => s.code);
+    const todayClasses = DB.getTimetable().filter((t) => t.day === dayAbbr() && subjectCodes.includes(t.subjectCode));
+    const pending = todayClasses.filter((c) =>
+      !DB.getAttendance().some((r) => r.subjectCode === c.subjectCode && r.classId === c.classId && r.staffId === person.id && r.date === Utils.todayISO())
+    );
+    if (pending.length > 0) {
+      items.push({ icon: 'fa-clock text-warning', text: `You have ${pending.length} attendance session(s) pending for today.`, time: now });
+    } else if (todayClasses.length > 0) {
+      items.push({ icon: 'fa-circle-check text-success', text: "All of today's attendance has been submitted.", time: now });
+    } else {
+      items.push({ icon: 'fa-bell text-muted', text: 'No classes scheduled for you today.', time: now });
+    }
   } else {
-    items = [
-      { icon: 'fa-triangle-exclamation text-danger', text: '12 students have attendance below 75%.', time: '1h ago' },
-      { icon: 'fa-chart-line text-primary', text: 'Department attendance is 91% this week.', time: '3h ago' },
-      { icon: 'fa-circle-info text-info', text: 'New staff profile request awaiting review.', time: '5h ago' }
-    ];
+    const allAtt = DB.getAttendance();
+    const students = DB.getStudents();
+    const below = students.filter((st) => {
+      const r = allAtt.filter((x) => x.studentId === st.id);
+      if (!r.length) return false;
+      return Utils.percentage(r.filter((x) => x.status !== 'absent').length, r.length) < 75;
+    });
+    if (allAtt.length === 0) {
+      items.push({ icon: 'fa-bell text-muted', text: 'No attendance records in the department yet.', time: now });
+    } else if (below.length > 0) {
+      items.push({ icon: 'fa-triangle-exclamation text-danger', text: `${below.length} student(s) have attendance below 75%.`, time: now });
+    } else {
+      items.push({ icon: 'fa-circle-check text-success', text: 'All students meet the attendance threshold.', time: now });
+    }
   }
 
   return items.map((n) => `

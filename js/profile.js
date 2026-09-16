@@ -31,7 +31,7 @@ const ProfileApp = (() => {
     { code: 'AI&DS', name: 'Artificial Intelligence & Data Science' },
     { code: 'AI', name: 'Artificial Intelligence & Data Science' }
   ];
-  const deptName = (code) => (APP_DEPS.find((d) => d.code === code) || {}).name || code || '—';
+  const deptName = (code) => (APP_DEPS.find((d) => d.code === code) || {}).name || code || 'Not Added';
 
   const ofSession = (role) => {
     if (role === 'Student') return DB.getStudents().find((s) => s.id === session().personId);
@@ -100,7 +100,7 @@ const ProfileApp = (() => {
       <span class="pf-ibox-icon" aria-hidden="true"><i class="fas ${icon}"></i></span>
       <div class="pf-ibox-body">
         <label>${esc2(label)}</label>
-        <p>${value || '—'}</p>
+        <p>${value || 'Not Added'}</p>
       </div>
     </div>`;
 
@@ -458,12 +458,12 @@ const ProfileApp = (() => {
         <div class="pf-col-side">
           ${sectionCard('fa-graduation-cap', 'Academic Information', `
             <div class="profile-info-grid">
-              ${infoBox('fa-building', 'Department', 'Artificial Intelligence and Data Science')}
+              ${infoBox('fa-building', 'Department', deptName(st.department))}
               ${infoBox('fa-layer-group', 'Year', st.year)}
               ${infoBox('fa-calendar', 'Semester', st.semester)}
               ${infoBox('fa-tag', 'Section', st.section)}
-              ${infoBox('fa-calendar-days', 'Academic Year', st.academicYear || '2025-2026')}
-              ${infoBox('fa-users', 'Batch', st.batch || st.year + ' Year')}
+              ${infoBox('fa-calendar-days', 'Academic Year', st.academicYear || 'Not Added')}
+              ${infoBox('fa-users', 'Batch', st.batch || (st.year ? st.year + ' Year' : 'Not Added'))}
             </div>`)}
         </div>
       </div>
@@ -497,10 +497,11 @@ const ProfileApp = (() => {
           { key: 'dob',     label: 'Date of Birth',  type: 'date',     value: st.dob, hint: 'Optional — displayed for identification only.' },
         ], (vals) => {
           if (!vals.name) { Toast.error('Full name is required.'); return; }
-          const updated = DB.updateStudent(st.id, { name: vals.name, email: vals.email, phone: vals.phone, section: vals.section, dob: vals.dob || null });
-          if (updated) updateSessionName(updated.name);
+          const result = DB.updateStudent(st.id, { name: vals.name, email: vals.email, phone: vals.phone, section: vals.section, dob: vals.dob || null });
+          if (!result.ok) { Toast.error(result.message); return; }
+          updateSessionName(result.record.name);
           Modal.close();
-          Toast.success('Profile updated successfully.');
+          Toast.success(result.message);
           AppLayout.refreshIdentity();
           renderStudentProfile(mount, st.id, readOnly);
         });
@@ -536,7 +537,7 @@ const ProfileApp = (() => {
         <div><h1 class="pf-page-title">Profile</h1><p class="pf-page-sub">Manage your personal information and account settings</p></div>
       </div>
 
-      ${heroHTML(staff.name, 'Staff', 'Artificial Intelligence and Data Science', 'Staff ID', staff.staffId, staff.email, true, staff.staffId)}
+      ${heroHTML(staff.name, 'Staff', deptName(staff.department), 'Staff ID', staff.staffId, staff.email, true, staff.staffId)}
 
       <div class="pf-layout pf-grid-2">
         <div class="pf-col-main">
@@ -553,12 +554,12 @@ const ProfileApp = (() => {
         <div class="pf-col-side">
           ${sectionCard('fa-briefcase', 'Professional Information', `
             <div class="profile-info-grid">
-              ${infoBox('fa-building', 'Department', 'Artificial Intelligence and Data Science')}
+              ${infoBox('fa-building', 'Department', deptName(staff.department))}
               ${infoBox('fa-user-tie', 'Designation', staff.designation)}
               ${infoBox('fa-graduation-cap', 'Qualification', staff.qualification)}
               ${infoBox('fa-calendar-plus', 'Joining Date', fmtDate(staff.joiningDate))}
-              ${infoBox('fa-clock', 'Experience', (staff.experienceYears || 0) + ' years')}
-              ${infoBox('fa-calendar-days', 'Academic Year', staff.academicYear || '2025-2026')}
+              ${infoBox('fa-clock', 'Experience', staff.experienceYears ? staff.experienceYears + ' years' : 'Not Added')}
+              ${infoBox('fa-calendar-days', 'Academic Year', staff.academicYear || 'Not Added')}
             </div>`)}
         </div>
       </div>
@@ -594,10 +595,11 @@ const ProfileApp = (() => {
           { key: 'dob',          label: 'Date of Birth', type: 'date',   value: staff.dob },
         ], (vals) => {
           if (!vals.name) { Toast.error('Full name is required.'); return; }
-          const updated = DB.updateStaff(staff.id, { name: vals.name, email: vals.email, phone: vals.phone, dob: vals.dob || null });
-          if (updated) updateSessionName(updated.name);
+          const result = DB.updateStaff(staff.id, { name: vals.name, email: vals.email, phone: vals.phone, dob: vals.dob || null });
+          if (!result.ok) { Toast.error(result.message); return; }
+          updateSessionName(result.record.name);
           Modal.close();
-          Toast.success('Profile updated successfully.');
+          Toast.success(result.message);
           AppLayout.refreshIdentity();
           renderStaffProfile(mount, DB.getStaff().find((f) => f.id === staff.id));
         });
@@ -637,7 +639,7 @@ const ProfileApp = (() => {
         <div><h1 class="pf-page-title">Profile</h1><p class="pf-page-sub">Manage your personal information and account settings</p></div>
       </div>
 
-      ${heroHTML(hod.name, 'HOD', 'Artificial Intelligence and Data Science', 'HOD ID', hod.hodId, hod.email, true, hod.hodId)}
+      ${heroHTML(hod.name, 'HOD', deptName(hod.department), 'HOD ID', hod.hodId, hod.email, true, hod.hodId)}
 
       <div class="pf-layout pf-grid-2">
         <div class="pf-col-main">
@@ -654,12 +656,12 @@ const ProfileApp = (() => {
         <div class="pf-col-side">
           ${sectionCard('fa-briefcase', 'Professional Information', `
             <div class="profile-info-grid">
-              ${infoBox('fa-building', 'Department', 'Artificial Intelligence and Data Science')}
+              ${infoBox('fa-building', 'Department', deptName(hod.department))}
               ${infoBox('fa-user-shield', 'Designation', 'Head of Department')}
               ${infoBox('fa-graduation-cap', 'Qualification', hod.education || hod.qualification)}
               ${infoBox('fa-calendar-plus', 'Joining Date', fmtDate(hod.joiningDate))}
-              ${infoBox('fa-clock', 'Experience', (hod.experienceYears || 0) + ' years')}
-              ${infoBox('fa-calendar-days', 'Academic Year', hod.academicYear || '2025-2026')}
+              ${infoBox('fa-clock', 'Experience', hod.experienceYears ? hod.experienceYears + ' years' : 'Not Added')}
+              ${infoBox('fa-calendar-days', 'Academic Year', hod.academicYear || 'Not Added')}
             </div>`)}
         </div>
       </div>
@@ -691,10 +693,11 @@ const ProfileApp = (() => {
           { key: 'dob',   label: 'Date of Birth', type: 'date',   value: hod.dob },
         ], (vals) => {
           if (!vals.name) { Toast.error('Full name is required.'); return; }
-          const updated = DB.updateStaff(hod.id, { name: vals.name, email: vals.email, phone: vals.phone, dob: vals.dob || null });
-          if (updated) updateSessionName(updated.name);
+          const result = DB.updateHod(hod.id, { name: vals.name, email: vals.email, phone: vals.phone, dob: vals.dob || null });
+          if (!result.ok) { Toast.error(result.message); return; }
+          updateSessionName(result.record.name);
           Modal.close();
-          Toast.success('Profile updated successfully.');
+          Toast.success(result.message);
           AppLayout.refreshIdentity();
           renderHodProfile(mount, DB.getHODs().find((h) => h.id === hod.id));
         });

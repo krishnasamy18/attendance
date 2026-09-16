@@ -77,27 +77,36 @@ const HodApp = (() => {
     // Department chart (present vs absent vs late)
     const ctx = document.getElementById('dept-chart');
     if (ctx) {
-      new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: ['Present', 'Absent', 'Late'],
-          datasets: [{
-            data: [deptStats.present, deptStats.absent, deptStats.late],
-            backgroundColor: ['#10b981', '#ef4444', '#f59e0b'],
-            borderWidth: 0,
-            hoverOffset: 6
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: '66%',
-          plugins: {
-            legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16, font: { weight: 600 } } },
-            tooltip: { backgroundColor: '#0f172a' }
+      if (allAtt.length > 0) {
+        new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: ['Present', 'Absent', 'Late'],
+            datasets: [{
+              data: [deptStats.present, deptStats.absent, deptStats.late],
+              backgroundColor: ['#10b981', '#ef4444', '#f59e0b'],
+              borderWidth: 0,
+              hoverOffset: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '66%',
+            plugins: {
+              legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16, font: { weight: 600 } } },
+              tooltip: { backgroundColor: '#0f172a' }
+            }
           }
-        }
-      });
+        });
+      } else {
+        ctx.parentElement.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-chart-pie"></i>
+            <h4>No Attendance Records</h4>
+            <span class="text-muted">Charts appear once attendance is marked.</span>
+          </div>`;
+      }
     }
     document.getElementById('dept-legend').innerHTML = `
       <span class="badge badge-success">Overall ${deptStats.percentage}%</span>
@@ -112,7 +121,7 @@ const HodApp = (() => {
       const pct = Utils.percentage(presentCount, clsAtt.length);
       return { label: `${cls.id} Sem AI & DS`, count: clsStudents.length, pct, threshold: pct < THRESHOLD };
     });
-    document.getElementById('class-wise-tbody').innerHTML = clsRows.map((c) => `
+    document.getElementById('class-wise-tbody').innerHTML = clsRows.length ? clsRows.map((c) => `
       <tr>
         <td><strong>${esc(c.label)}</strong></td>
         <td>${c.count}</td>
@@ -122,7 +131,7 @@ const HodApp = (() => {
           <div class="progress mt-10"><div class="progress-bar" style="width:${c.pct}%;background:${Utils.pctColor(c.pct)}"></div></div>
         </td>
       </tr>
-    `).join('');
+    `).join('') : TableRenderer.emptyState(6, 'No Classes Added');
 
     // Alerts
     const alerts = [];
@@ -170,7 +179,7 @@ const HodApp = (() => {
       const rows = Utils.paginate(filtered, page, PER_PAGE);
 
       if (rows.length === 0) {
-        tbody.innerHTML = TableRenderer.emptyState(7, 'No students match your filters.');
+        tbody.innerHTML = TableRenderer.emptyState(7, 'No Students Added');
       } else {
         tbody.innerHTML = rows.map((st) => {
           const pct = summary(st.id).pct;
@@ -259,6 +268,7 @@ const HodApp = (() => {
       title: 'Add Student',
       body: `
         <form id="student-form" novalidate>
+          <p class="text-muted" style="margin-bottom:14px">The default login password will be the <strong>register number</strong>.</p>
           <div class="form-group">
             <label>Register Number <span class="required">*</span></label>
             <input type="text" class="form-control" id="sf-reg" placeholder="e.g. 2024AI005">
@@ -328,7 +338,7 @@ const HodApp = (() => {
       });
       if (!valid) return;
 
-      DB.addStudent({
+      const result = DB.addStudent({
         registerNumber: reg,
         name,
         year: document.getElementById('sf-year').value,
@@ -338,8 +348,9 @@ const HodApp = (() => {
         email: document.getElementById('sf-email').value.trim(),
         phone: document.getElementById('sf-phone').value.trim()
       });
+      if (!result.ok) { Toast.error(result.message); return; }
       Modal.close();
-      Toast.success('Student added successfully.');
+      Toast.success(result.message);
       renderStudentManagement();
     });
   };
@@ -404,7 +415,7 @@ const HodApp = (() => {
       const name = document.getElementById('sf-name').value.trim();
       if (!reg || !name) { Toast.warning('Register Number and Name are required.'); return; }
 
-      DB.updateStudent(studentId, {
+      const result = DB.updateStudent(studentId, {
         registerNumber: reg,
         name,
         year: document.getElementById('sf-year').value,
@@ -414,8 +425,9 @@ const HodApp = (() => {
         email: document.getElementById('sf-email').value.trim(),
         phone: document.getElementById('sf-phone').value.trim()
       });
+      if (!result.ok) { Toast.error(result.message); return; }
       Modal.close();
-      Toast.success('Student updated successfully.');
+      Toast.success(result.message);
       renderStudentManagement();
     });
   };
@@ -447,7 +459,7 @@ const HodApp = (() => {
 
     document.getElementById('staff-subtitle').textContent = `${staff.length} faculty members · Department of AI & DS`;
 
-    mount.innerHTML = staff.map((f) => `
+    mount.innerHTML = staff.length ? staff.map((f) => `
       <tr>
         <td><strong>${esc(f.staffId)}</strong></td>
         <td>
@@ -459,10 +471,10 @@ const HodApp = (() => {
         <td>${esc(f.department)}</td>
         <td>${esc(f.designation)}</td>
         <td>
-          ${f.subjects.map((s) => `<span class="badge badge-primary mb-10" style="margin:2px">${esc(s)}</span>`).join(' ')}
+          ${(f.subjects || []).map((s) => `<span class="badge badge-primary mb-10" style="margin:2px">${esc(s)}</span>`).join(' ')}
         </td>
         <td>
-          ${f.classes.map((c) => `<span class="badge badge-gray mb-10" style="margin:2px">${esc(classLabel(c))}</span>`).join(' ')}
+          ${(f.classes || []).map((c) => `<span class="badge badge-gray mb-10" style="margin:2px">${esc(classLabel(c))}</span>`).join(' ')}
         </td>
         <td><span class="badge badge-success">Active</span></td>
         <td class="actions">
@@ -470,7 +482,7 @@ const HodApp = (() => {
           <button class="btn btn-sm btn-outline" onclick="HodApp.editStaff('${esc(f.id)}')"><i class="fas fa-pen"></i>Edit</button>
         </td>
       </tr>
-    `).join('');
+    `).join('') : TableRenderer.emptyState(8, 'No Staff Added');
 
     document.getElementById('btn-add-staff').addEventListener('click', () => addStaffModal());
   };
@@ -480,6 +492,7 @@ const HodApp = (() => {
       title: 'Add Staff',
       body: `
         <form novalidate>
+          <p class="text-muted" style="margin-bottom:14px">The default login password will be the <strong>Staff ID</strong>.</p>
           <div class="form-group">
             <label>Staff ID <span class="required">*</span></label>
             <input type="text" class="form-control" id="sf2-id" placeholder="e.g. STAFF004">
@@ -527,7 +540,7 @@ const HodApp = (() => {
       const name = document.getElementById('sf2-name').value.trim();
       if (!id || !name) { Toast.warning('Staff ID and name are required.'); return; }
 
-      DB.addStaff({
+      const result = DB.addStaff({
         staffId: id,
         name,
         department: 'AI&DS',
@@ -537,8 +550,9 @@ const HodApp = (() => {
         email: document.getElementById('sf2-email').value.trim(),
         phone: document.getElementById('sf2-phone').value.trim()
       });
+      if (!result.ok) { Toast.error(result.message); return; }
       Modal.close();
-      Toast.success('Staff added successfully.');
+      Toast.success(result.message);
       renderStaffManagement();
     });
   };
@@ -577,7 +591,7 @@ const HodApp = (() => {
     ov.querySelector('[data-sf2-cancel]').addEventListener('click', Modal.close);
 
     document.getElementById('sf2-save').addEventListener('click', () => {
-      DB.updateStaff(staffId, {
+      const result = DB.updateStaff(staffId, {
         staffId: document.getElementById('sf2-id').value.trim(),
         name: document.getElementById('sf2-name').value.trim(),
         designation: document.getElementById('sf2-desig').value,
@@ -586,8 +600,9 @@ const HodApp = (() => {
         email: document.getElementById('sf2-email').value.trim(),
         phone: document.getElementById('sf2-phone').value.trim()
       });
+      if (!result.ok) { Toast.error(result.message); return; }
       Modal.close();
-      Toast.success('Staff updated successfully.');
+      Toast.success(result.message);
       renderStaffManagement();
     });
   };
@@ -628,11 +643,14 @@ const HodApp = (() => {
     const departments = DB.getDepartments();
 
     mount.innerHTML = `
-      <div class="page-header">
+      <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
         <div>
           <h1>Classes & Academic Setup</h1>
           <p>Manage classes, sections, academic years, semesters and departments.</p>
         </div>
+        <button class="btn btn-danger btn-sm" id="reset-all-data" style="height:38px">
+          <i class="fas fa-trash-can"></i> Delete All Data
+        </button>
       </div>
 
       <div class="tabs" id="cfg-tabs">
@@ -667,7 +685,7 @@ const HodApp = (() => {
             <div class="table-responsive">
               <table class="table">
                 <thead><tr><th>Class ID</th><th>Class Name</th><th>Section</th></tr></thead>
-                <tbody>${rowsHtml || TableRenderer.emptyState(3, 'No classes defined.')}</tbody>
+                <tbody>${rowsHtml || TableRenderer.emptyState(3, 'No Classes Added')}</tbody>
               </table>
             </div>
           </div>`;
@@ -688,9 +706,10 @@ const HodApp = (() => {
           document.getElementById('save-class').addEventListener('click', () => {
             const id = document.getElementById('new-class-id').value.trim();
             if (!id) { Toast.warning('Class ID is required.'); return; }
-            DB.addClass({ id, section: document.getElementById('new-class-sec').value, className: document.getElementById('new-class-name').value.trim() || `${id} Sem B.Tech AI&DS` });
+            const result = DB.addClass({ id, section: document.getElementById('new-class-sec').value, className: document.getElementById('new-class-name').value.trim() || `${id} Sem B.Tech AI&DS` });
+            if (!result.ok) { Toast.error(result.message); return; }
             Modal.close();
-            Toast.success('Class added.');
+            Toast.success(result.message);
             renderClasses();
           });
         });
@@ -723,8 +742,13 @@ const HodApp = (() => {
           document.getElementById('save-year').addEventListener('click', () => {
             const y = document.getElementById('new-year').value.trim();
             if (!y) { Toast.warning('Enter an academic year.'); return; }
-            Toast.success(`Academic year ${y} added.`);
+            const result = DB.addAcademicYear(y);
             Modal.close();
+            if (result.ok) {
+              Toast.success(result.message);
+            } else {
+              Toast.error(result.message);
+            }
             renderClasses();
           });
         });
@@ -750,6 +774,21 @@ const HodApp = (() => {
 
     document.querySelectorAll('#cfg-tabs .tab').forEach((t) => {
       t.addEventListener('click', () => renderTab(t.dataset.tab));
+    });
+
+    // Destroy all stored data (hard reset back to a fresh empty system)
+    document.getElementById('reset-all-data').addEventListener('click', () => {
+      Confirm.show({
+        title: 'Delete All Data?',
+        message: 'This will permanently delete all students, staff, HOD accounts, classes, subjects, academic years, timetable entries and attendance records. This cannot be undone.',
+        confirmText: 'Delete Everything',
+        confirmClass: 'btn-danger',
+        onConfirm: () => {
+          DB.resetAllData();
+          Toast.success('All data has been deleted.');
+          setTimeout(() => Auth.logout(), 600);
+        }
+      });
     });
 
     renderTab('classes');
@@ -789,7 +828,7 @@ const HodApp = (() => {
                     <td><span class="badge badge-info">${esc(s.code)}</span></td>
                     <td><strong>${esc(s.name)}</strong></td>
                     <td>Semester ${esc(s.semester)}</td>
-                  </tr>`).join('') || TableRenderer.emptyState(3, 'No subjects defined.')}
+                  </tr>`).join('') || TableRenderer.emptyState(3, 'No Subjects Added')}
               </tbody>
             </table>
           </div>
@@ -814,9 +853,10 @@ const HodApp = (() => {
           const code = document.getElementById('new-sub-code').value.trim().toUpperCase();
           const name = document.getElementById('new-sub-name').value.trim();
           if (!code || !name) { Toast.warning('Code and name are required.'); return; }
-          DB.addSubject({ code, name, semester: document.getElementById('new-sub-sem').value });
+          const result = DB.addSubject({ code, name, semester: document.getElementById('new-sub-sem').value });
+          if (!result.ok) { Toast.error(result.message); return; }
           Modal.close();
-          Toast.success('Subject added.');
+          Toast.success(result.message);
           render();
         });
       });
@@ -959,7 +999,7 @@ const HodApp = (() => {
           }
         });
       } else {
-        ch.parentElement.innerHTML = `<div class="empty-state"><i class="fas fa-chart-line"></i><h4>No data for the selected filters.</h4></div>`;
+        ch.parentElement.innerHTML = `<div class="empty-state"><i class="fas fa-chart-line"></i><h4>No Attendance Records</h4></div>`;
       }
 
       // At-risk students
@@ -988,7 +1028,7 @@ const HodApp = (() => {
         clsMap[r.classId][r.status] += 1;
         clsMap[r.classId].total += 1;
       });
-      document.getElementById('mon-table').innerHTML = DB.getClasses().map((c) => {
+      document.getElementById('mon-table').innerHTML = DB.getClasses().length ? DB.getClasses().map((c) => {
         const g = clsMap[c.id];
         if (!g) return `<tr><td>${esc(classLabel(c.id))}</td><td colspan="5" class="text-muted">No data</td></tr>`;
         const pct = Utils.percentage(g.present + g.late, g.total);
@@ -1004,7 +1044,7 @@ const HodApp = (() => {
               <div class="progress mt-10"><div class="progress-bar" style="width:${pct}%;background:${Utils.pctColor(pct)}"></div></div>
             </td>
           </tr>`;
-      }).join('');
+      }).join('') : TableRenderer.emptyState(6, 'No Classes Added');
     };
 
     document.getElementById('mon-apply').addEventListener('click', applyMonitor);

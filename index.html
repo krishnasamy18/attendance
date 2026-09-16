@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login | Attendance Management System</title>
+  <title>Login | R P Sarathy Institute of Technology</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -11,120 +11,188 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/login.css">
 </head>
-<body class="login-body">
-  <div class="login-bg-pattern"></div>
+<body class="rpsit-body">
+  <a class="skip-link" href="#login-title">Skip to login</a>
 
-  <div class="login-wrapper">
-    <!-- Left branding panel -->
-    <div class="login-left">
-      <div class="login-brand">
-        <div class="login-logo"><i class="fas fa-graduation-cap"></i></div>
-        <div class="login-brand-text">
-          <h2>Attendance System</h2>
-          <span>College of Engineering &amp; Technology</span>
+  <header class="rpsit-topbar">
+    <div class="rpsit-container rpsit-topbar-inner">
+      <div class="rpsit-topbar-left">
+        <span class="rpsit-topbar-item"><i class="fas fa-award" aria-hidden="true"></i> NAAC A++ Accredited</span>
+        <span class="rpsit-topbar-dot" aria-hidden="true"></span>
+        <span class="rpsit-topbar-item"><i class="fas fa-map-marker-alt" aria-hidden="true"></i> Salem, Tamil Nadu</span>
+      </div>
+      <nav class="rpsit-topnav" id="rpsit-topnav" aria-label="Quick links">
+        <a href="#">Alumni</a>
+        <a href="#">RPSIT - Mindbox</a>
+        <a href="#">IQAC</a>
+        <a href="#">Events</a>
+      </nav>
+      <button class="rpsit-menu-btn" id="rpsit-menu-btn" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="rpsit-topnav">
+        <i class="fas fa-bars" aria-hidden="true"></i>
+      </button>
+    </div>
+  </header>
+
+  <header class="rpsit-brand">
+    <div class="rpsit-container rpsit-brand-inner">
+      <a href="#" class="rpsit-brand-lockup" aria-label="R P Sarathy Institute of Technology home">
+        <div class="rpsit-logo" aria-hidden="true">
+          <svg class="rpsit-emblem" viewBox="0 0 110 110">
+            <circle cx="55" cy="55" r="52" fill="none" stroke="#0b2a6b" stroke-width="2.5"/>
+            <circle cx="55" cy="55" r="46" fill="none" stroke="#0b2a6b" stroke-width="1"/>
+            <circle cx="55" cy="55" r="41" fill="#0b2a6b"/>
+            <text x="55" y="62" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="800" fill="#ffffff" letter-spacing="1">RPS</text>
+            <text x="55" y="82" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="8" letter-spacing="2.5" fill="#c9d6ef">INSTITUTE</text>
+          </svg>
         </div>
-      </div>
+        <div class="rpsit-brand-text">
+          <h1>R P Sarathy Institute of Technology</h1>
+          <span class="rpsit-autonomy">An Autonomous Institution</span>
+        </div>
+      </a>
+    </div>
+  </header>
 
-      <div class="login-left-title">
-        <h1>Attendance Management System</h1>
-        <p>Manage attendance smarter and faster for students, staff and the department.</p>
-      </div>
-
-      <div class="login-features">
-        <div class="login-feature"><i class="fas fa-clipboard-check"></i> Student attendance at a glance</div>
-        <div class="login-feature"><i class="fas fa-chalkboard-user"></i> Staff-driven attendance marking</div>
-        <div class="login-feature"><i class="fas fa-chart-line"></i> Department-wide monitoring for HOD</div>
-        <div class="login-feature"><i class="fas fa-shield-halved"></i> Role-based secure access</div>
-      </div>
+  <main class="rpsit-main">
+    <div class="rpsit-campus-bg" aria-hidden="true">
+      <svg class="rpsit-campus-skyline" viewBox="0 0 1440 320" preserveAspectRatio="xMidYMax slice">
+        <path fill="#d9e4f5" d="M0 260 L80 260 L80 200 L140 200 L140 240 L180 240 L180 150 L240 150 L240 210 L300 210 L300 250 L360 250 L360 120 L430 120 L430 180 L500 180 L500 230 L560 230 L560 260 L640 260 L640 190 L710 190 L710 110 L780 110 L780 160 L860 160 L860 230 L940 230 L940 200 L1010 200 L1010 150 L1080 150 L1080 210 L1150 210 L1150 245 L1210 245 L1210 175 L1280 175 L1280 220 L1360 220 L1360 260 L1440 260 L1440 320 L0 320 Z"/>
+      </svg>
     </div>
 
-    <!-- Right form panel -->
-    <div class="login-right">
-      <div class="login-form-head">
-        <h3>Welcome Back</h3>
-        <p>Sign in to continue to your dashboard</p>
-      </div>
+    <div class="rpsit-container rpsit-main-inner">
+      <section class="login-card" id="login-card" aria-labelledby="login-title">
+        <div class="login-form-head">
+          <h2 class="login-pill" id="login-title">Login</h2>
+          <p class="login-subtitle">Sign in to continue to your dashboard</p>
+        </div>
 
-      <div class="login-error-box" id="login-error" role="alert">
-        <i class="fas fa-circle-exclamation"></i>
-        <span id="login-error-msg">Invalid credentials.</span>
-      </div>
+        <div class="login-error-box" id="login-error" role="alert">
+          <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
+          <span id="login-error-msg">Invalid login credentials.</span>
+        </div>
 
-      <form id="login-form" novalidate autocomplete="off">
-        <div class="form-group">
-          <label for="role" id="role-label">Select Role <span class="required">*</span></label>
-          <div class="role-selector" id="role-selector" role="radiogroup" aria-label="Select your role">
-            <label class="role-option">
-              <input type="radio" name="role" value="Student" checked>
-              <div class="role-card">
-                <i class="fas fa-user-graduate"></i>
-                <span>Student</span>
-              </div>
-            </label>
-            <label class="role-option">
-              <input type="radio" name="role" value="Staff">
-              <div class="role-card">
-                <i class="fas fa-chalkboard-user"></i>
-                <span>Staff</span>
-              </div>
-            </label>
-            <label class="role-option">
-              <input type="radio" name="role" value="HOD">
-              <div class="role-card">
-                <i class="fas fa-user-tie"></i>
-                <span>HOD</span>
-              </div>
-            </label>
+        <form id="login-form" novalidate autocomplete="off">
+          <div class="form-group">
+            <label id="role-label">Login As <span class="required">*</span></label>
+            <div class="role-selector" id="role-selector" role="radiogroup" aria-label="Select your role">
+              <label class="role-option">
+                <input type="radio" name="role" value="Student" checked>
+                <div class="role-card">
+                  <i class="fas fa-user-graduate" aria-hidden="true"></i>
+                  <span>Student</span>
+                </div>
+              </label>
+              <label class="role-option">
+                <input type="radio" name="role" value="Staff">
+                <div class="role-card">
+                  <i class="fas fa-chalkboard-user" aria-hidden="true"></i>
+                  <span>Staff</span>
+                </div>
+              </label>
+              <label class="role-option">
+                <input type="radio" name="role" value="HOD">
+                <div class="role-card">
+                  <i class="fas fa-user-tie" aria-hidden="true"></i>
+                  <span>HOD</span>
+                </div>
+              </label>
+            </div>
+            <div class="form-error" id="err-role">Please select a role.</div>
           </div>
-          <div class="form-error" id="err-role">Please select a role.</div>
-        </div>
 
-        <div class="login-input-group">
-          <i class="fas fa-id-card"></i>
-          <input type="text" id="userid" placeholder="User ID / Register Number" autocomplete="username" aria-label="User ID or Register Number">
-        </div>
-        <div class="form-error" id="err-userid" style="margin:-8px 0 12px">Please enter your User ID / Register Number.</div>
+          <div class="form-group field-group">
+            <label for="userid">Registered Mobile Number/Email ID <span class="required">*</span></label>
+            <div class="login-input-group">
+              <i class="fas fa-user" aria-hidden="true"></i>
+              <input type="text" id="userid" placeholder="98756***** / name@gmail.com" autocomplete="username" aria-label="Registered mobile number or email id">
+            </div>
+            <div class="form-error" id="err-userid">Please enter your registered mobile number or email.</div>
+          </div>
 
-        <div class="login-input-group">
-          <i class="fas fa-lock"></i>
-          <input type="password" id="password" placeholder="Password" autocomplete="current-password" aria-label="Password">
-          <button type="button" class="password-toggle" id="toggle-password" aria-label="Show or hide password">
-            <i class="fas fa-eye" id="toggle-icon"></i>
+          <div class="form-group field-group">
+            <label for="password">Password <span class="required">*</span></label>
+            <div class="login-input-group">
+              <i class="fas fa-lock" aria-hidden="true"></i>
+              <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password" aria-label="Password">
+              <button type="button" class="password-toggle" id="toggle-password" aria-label="Show or hide password">
+                <i class="fas fa-eye" id="toggle-icon" aria-hidden="true"></i>
+              </button>
+            </div>
+            <div class="form-error" id="err-password">Please enter your password.</div>
+          </div>
+
+          <div class="form-group field-group">
+            <label for="captcha">Captcha <span class="required">*</span></label>
+            <div class="captcha-row">
+              <div class="login-input-group">
+                <i class="fas fa-shield-halved" aria-hidden="true"></i>
+                <input type="text" id="captcha" placeholder="Enter answer" aria-label="Captcha answer" inputmode="numeric" autocomplete="off" maxlength="3">
+              </div>
+              <div class="captcha-question" id="captcha-question" aria-live="polite">5 + 10 = ?</div>
+              <button type="button" class="captcha-refresh" id="captcha-refresh" aria-label="Generate new captcha">
+                <i class="fas fa-rotate-right" aria-hidden="true"></i>
+              </button>
+            </div>
+            <div class="form-error" id="err-captcha">Incorrect captcha answer.</div>
+          </div>
+
+          <div class="login-options">
+            <label class="remember-me">
+              <input type="checkbox" id="remember" checked>
+              <span>Remember me</span>
+            </label>
+            <button type="button" class="forgot-link" id="forgot-link">Forgot password?</button>
+          </div>
+
+          <button type="submit" class="login-btn" id="login-btn">
+            <span>Sign In</span><i class="fas fa-arrow-right" aria-hidden="true"></i>
+          </button>
+        </form>
+
+        <div class="setup-panel" id="setup-panel" style="display:none">
+          <div class="setup-head">
+            <h3>Create Administrator</h3>
+            <p>No accounts exist yet. Create the first <strong>HOD</strong> account to start managing the department.</p>
+          </div>
+          <div class="form-group" style="margin-bottom:16px">
+            <label for="setup-id">HOD ID <span class="required">*</span></label>
+            <input type="text" id="setup-id" class="form-control" placeholder="e.g. HODAI001" autocomplete="off">
+          </div>
+          <div class="form-group" style="margin-bottom:16px">
+            <label for="setup-name">Full Name <span class="required">*</span></label>
+            <input type="text" id="setup-name" class="form-control" placeholder="Head of Department name" autocomplete="off">
+          </div>
+          <div class="form-group" style="margin-bottom:16px">
+            <label for="setup-email">Email</label>
+            <input type="email" id="setup-email" class="form-control" placeholder="hod@college.edu" autocomplete="off">
+          </div>
+          <div class="form-group" style="margin-bottom:16px">
+            <label for="setup-pw">Password <span class="required">*</span></label>
+            <input type="password" id="setup-pw" class="form-control" placeholder="Minimum 6 characters" autocomplete="new-password">
+          </div>
+          <div class="form-group" style="margin-bottom:16px">
+            <label for="setup-pw2">Confirm Password <span class="required">*</span></label>
+            <input type="password" id="setup-pw2" class="form-control" placeholder="Re-enter password" autocomplete="new-password">
+          </div>
+          <div class="form-error" id="setup-error">Please fill in the required fields.</div>
+          <button type="button" class="login-btn" id="setup-save">
+            <i class="fas fa-user-shield" aria-hidden="true"></i> Create Account &amp; Get Started
           </button>
         </div>
-        <div class="form-error" id="err-password" style="margin:-8px 0 12px">Please enter your password.</div>
-
-        <div class="login-options">
-          <label class="remember-me">
-            <input type="checkbox" id="remember" checked>
-            <span>Remember me</span>
-          </label>
-          <button type="button" class="forgot-link" id="forgot-link">Forgot password?</button>
-        </div>
-
-        <button type="submit" class="login-btn" id="login-btn">
-          <i class="fas fa-right-to-bracket"></i>
-          Login
-        </button>
-      </form>
-
-      <div class="login-hint">
-        <strong>Demo accounts</strong><br>
-        Student: <code>2021AI001</code> / <code>student123</code><br>
-        Staff: <code>STAFF001</code> / <code>staff123</code><br>
-        HOD: <code>HODAI001</code> / <code>hod123</code>
-      </div>
+      </section>
     </div>
-  </div>
+  </main>
 
-  <div class="login-footer">© 2026 College of Engineering &amp; Technology · Attendance Management System</div>
+  <footer class="rpsit-footer">
+    <div class="rpsit-container">© 2026 R P Sarathy Institute of Technology · Attendance Management System</div>
+  </footer>
 
-  <!-- Forgot password modal -->
   <div class="modal-overlay" id="forgot-modal">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="forgot-title">
       <div class="modal-header">
         <h3 id="forgot-title">Reset Password</h3>
-        <button class="modal-close" data-forgot-close aria-label="Close"><i class="fas fa-xmark"></i></button>
+        <button class="modal-close" data-forgot-close aria-label="Close"><i class="fas fa-xmark" aria-hidden="true"></i></button>
       </div>
       <div class="modal-body">
         <p class="reset-help">Enter your User ID. A reset link will be sent to your registered email after verification.</p>
@@ -137,7 +205,7 @@
       <div class="modal-footer">
         <button class="btn btn-outline" data-forgot-close>Cancel</button>
         <button class="btn btn-primary" id="reset-submit">
-          <i class="fas fa-paper-plane"></i> Send Reset Link
+          <i class="fas fa-paper-plane" aria-hidden="true"></i> Send Reset Link
         </button>
       </div>
     </div>
@@ -145,13 +213,12 @@
 
   <script src="js/mock-data.js"></script>
   <script src="js/auth.js"></script>
-    <script src="js/photo.js"></script>
+  <script src="js/photo.js"></script>
   <script src="js/app.js"></script>
   <script>
     (function () {
       'use strict';
 
-      // Redirect already-logged-in users
       const session = Auth.getSession();
       if (session) {
         window.location.href = Auth.getHomeURL(session.role);
@@ -159,19 +226,106 @@
       }
 
       const form = document.getElementById('login-form');
+      const setupPanel = document.getElementById('setup-panel');
+
+      const menuBtn = document.getElementById('rpsit-menu-btn');
+      const topnav = document.getElementById('rpsit-topnav');
+      const closeMenu = () => {
+        topnav.classList.remove('open');
+        menuBtn.setAttribute('aria-expanded', 'false');
+      };
+      menuBtn.addEventListener('click', () => {
+        const open = !topnav.classList.contains('open');
+        topnav.classList.toggle('open', open);
+        menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      topnav.querySelectorAll('a').forEach((a) => a.addEventListener('click', closeMenu));
+
+      const captchaInput = document.getElementById('captcha');
+      const captchaQuestion = document.getElementById('captcha-question');
+      const errCaptcha = document.getElementById('err-captcha');
+      let captchaAnswer = 0;
+      const newCaptcha = () => {
+        const a = 4 + Math.floor(Math.random() * 4);
+        const b = 4 + Math.floor(Math.random() * 9);
+        captchaAnswer = a + b;
+        captchaQuestion.textContent = a + ' + ' + b + ' = ?';
+        captchaInput.value = '';
+        errCaptcha.classList.remove('show');
+      };
+      newCaptcha();
+      document.getElementById('captcha-refresh').addEventListener('click', newCaptcha);
+
+      const finishSetup = (result) => {
+        if (result.ok) {
+          Toast.success(result.message);
+          const pw = document.getElementById('setup-pw').value;
+          Auth.login(document.getElementById('setup-id').value.trim(), pw, true).then((res) => {
+            if (res.success) {
+              setTimeout(() => window.location.href = Auth.getHomeURL(res.user.role), 400);
+            } else {
+              window.location.href = 'index.html';
+            }
+          });
+        }
+      };
+
+      if (!DB.hasAccounts()) {
+        document.getElementById('login-title').textContent = 'Get Started';
+        document.querySelector('.login-subtitle').textContent = 'Create the first HOD account for your department';
+        form.style.display = 'none';
+        document.getElementById('forgot-link').style.display = 'none';
+        setupPanel.style.display = 'block';
+      }
+
+      document.getElementById('setup-save').addEventListener('click', () => {
+        const err = document.getElementById('setup-error');
+        const id = document.getElementById('setup-id').value.trim();
+        const name = document.getElementById('setup-name').value.trim();
+        const email = document.getElementById('setup-email').value.trim();
+        const pw = document.getElementById('setup-pw').value;
+        const pw2 = document.getElementById('setup-pw2').value;
+
+        if (!id || !name || !pw) {
+          err.textContent = 'HOD ID, Full Name and Password are required.';
+          err.classList.add('show');
+          return;
+        }
+        if (pw.length < 6) {
+          err.textContent = 'Password must be at least 6 characters.';
+          err.classList.add('show');
+          return;
+        }
+        if (pw !== pw2) {
+          err.textContent = 'Passwords do not match.';
+          err.classList.add('show');
+          return;
+        }
+        err.classList.remove('show');
+
+        const btn = document.getElementById('setup-save');
+        Buttons.loading(btn, 'Creating account...');
+        const result = DB.createHOD({ hodId: id, name, email, password: pw });
+        Buttons.reset(btn);
+        if (!result.ok) {
+          err.textContent = result.message;
+          err.classList.add('show');
+          return;
+        }
+        finishSetup(result);
+      });
+
       const roleInputs = form.querySelectorAll('input[name="role"]');
-      const userId = document.getElementById('userid');
+      const userid = document.getElementById('userid');
       const password = document.getElementById('password');
       const loginBtn = document.getElementById('login-btn');
       const errorBox = document.getElementById('login-error');
       const errorMsg = document.getElementById('login-error-msg');
       const forgotModal = document.getElementById('forgot-modal');
 
-      // Prefill remembered User ID
       const remembered = localStorage.getItem('attendance_remembered_id');
-      if (remembered) userId.value = remembered;
+      if (remembered) userid.value = remembered;
 
-      // Show/Hide password
       const togglePw = document.getElementById('toggle-password');
       togglePw.addEventListener('click', () => {
         const isPw = password.type === 'password';
@@ -180,22 +334,23 @@
         togglePw.setAttribute('aria-label', isPw ? 'Hide password' : 'Show password');
       });
 
-      // Validate fields
       const clearError = (el) => {
         el.classList.remove('invalid');
-        const err = el.closest('.login-input-group, .form-group').querySelector('.form-error');
+        const err = el.closest('.field-group, .form-group').querySelector('.form-error');
         if (err) err.classList.remove('show');
       };
+      const clearBox = () => errorBox.classList.remove('show');
 
-      userId.addEventListener('input', () => clearError(userId));
-      password.addEventListener('input', () => clearError(password));
+      userid.addEventListener('input', () => { clearError(userid); clearBox(); });
+      password.addEventListener('input', () => { clearError(password); clearBox(); });
+      captchaInput.addEventListener('input', () => { clearError(captchaInput); clearBox(); });
       roleInputs.forEach((r) => r.addEventListener('change', () => {
         document.getElementById('err-role').classList.remove('show');
       }));
 
-      function setError(input, errEl) {
+      function invalidate(input, errId) {
         input.classList.add('invalid');
-        errEl.classList.add('show');
+        document.getElementById(errId).classList.add('show');
       }
 
       const redirectToDashboard = (role) => {
@@ -204,7 +359,6 @@
         else window.location.href = 'hod-dashboard.html';
       };
 
-      // Submit
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -216,33 +370,35 @@
           valid = false;
         }
 
-        const uid = userId.value.trim();
-        if (!uid) { setError(userId, document.getElementById('err-userid')); valid = false; }
+        const uid = userid.value.trim();
+        if (!uid) { invalidate(userid, 'err-userid'); valid = false; }
 
         const pw = password.value;
-        if (!pw) { setError(password, document.getElementById('err-password')); valid = false; }
+        if (!pw) { invalidate(password, 'err-password'); valid = false; }
+
+        const ans = captchaInput.value.trim();
+        if (!ans || parseInt(ans, 10) !== captchaAnswer) { invalidate(captchaInput, 'err-captcha'); valid = false; }
 
         if (!valid) return;
 
-        // Loading state
         loginBtn.disabled = true;
         loginBtn.innerHTML = '<span class="spinner"></span> Signing in...';
 
         const result = await Auth.login(uid, pw, document.getElementById('remember').checked);
 
         if (result.success) {
-          Toast.success(`Welcome, ${result.user.name}!`);
+          Toast.success('Welcome, ' + result.user.name + '!');
           setTimeout(() => redirectToDashboard(result.user.role), 400);
         } else {
           loginBtn.disabled = false;
-          loginBtn.innerHTML = '<i class="fas fa-right-to-bracket"></i> Login';
-          errorMsg.textContent = result.message;
+          loginBtn.innerHTML = '<span>Sign In</span><i class="fas fa-arrow-right"></i>';
+          errorMsg.textContent = 'Invalid login credentials.';
           errorBox.classList.add('show');
+          newCaptcha();
         }
       });
 
-      // Forgot password
-      document.getElementById('forgot-link').addEventListener('click', () => forgottenOpen());
+      document.getElementById('forgot-link').addEventListener('click', forgottenOpen);
       forgotModal.querySelectorAll('[data-forgot-close]').forEach((b) => b.addEventListener('click', forgottenClose));
       forgotModal.addEventListener('click', (e) => { if (e.target === forgotModal) forgottenClose(); });
 
@@ -263,9 +419,9 @@
         forgottenClose();
       });
 
-      // Escape key closes modal
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') forgottenClose();
+        if (e.key === 'Escape') closeMenu();
       });
     })();
   </script>

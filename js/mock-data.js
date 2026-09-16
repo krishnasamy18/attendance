@@ -1,436 +1,489 @@
 /* ============================================================
-   Mock Data (MOCK API LAYER)
+   Data Store (Client-side persistence layer)
    ------------------------------------------------------------
-   This module simulates a backend REST API.
-   Swap these functions for real fetch() calls later without
-   touching the rest of the UI code. Subjects, staff, classes,
-   attendance etc. are seeded here.
+   Replaces the old mock API. Data is persisted in localStorage
+   under namespaced keys and starts completely EMPTY — no sample
+   students, staff, HODs, subjects, classes, attendance or
+   timetable records are seeded.
+
+   The UI creates records through the CRUD methods below, which
+   also enforce duplicate-free IDs and emails. Swap these
+   functions for real fetch() calls later without touching the
+   rest of the UI code.
    ============================================================ */
 
 window.DB = (() => {
+  'use strict';
 
-  /* ---------- Departments, Classes, Subjects ---------- */
+  /* ---------- Storage keys & config ---------- */
 
+  const STORE_KEYS = {
+    students: 'attendance_students',
+    staff: 'attendance_staff',
+    hod: 'attendance_hod',
+    attendance: 'attendance_records',
+    subjects: 'attendance_subjects',
+    classes: 'attendance_classes',
+    timetable: 'attendance_timetable',
+    academicYears: 'attendance_academic_years'
+  };
+
+  // Generic academic configuration (not sample records).
   const departments = [
     { id: 'dept-ai', code: 'AI&DS', name: 'Artificial Intelligence and Data Science' }
   ];
-
-  const classesList = [
-    { id: 'I', label: 'I Semester', section: 'UV', className: 'I Sem B.Tech AI&DS' },
-    { id: 'II', label: 'II Semester', section: 'UV', className: 'II Sem B.Tech AI&DS' },
-    { id: 'III', label: 'III Semester', section: 'UV', className: 'III Sem B.Tech AI&DS' },
-    { id: 'IV', label: 'IV Semester', section: 'UV', className: 'IV Sem B.Tech AI&DS' }
-  ];
-
-  const subjects = [
-    { id: 'sub-ai', code: 'AI', name: 'Artificial Intelligence', semester: '3' },
-    { id: 'sub-ml', code: 'ML', name: 'Machine Learning', semester: '3' },
-    { id: 'sub-ds', code: 'DS', name: 'Data Structures', semester: '3' },
-    { id: 'sub-dssa', code: 'DSSA', name: 'Data Science Systems and Applications', semester: '7' },
-    { id: 'sub-dbms', code: 'DBMS', name: 'Database Management Systems', semester: '5' }
-  ];
-
-  const academicYears = ['2024-2025', '2025-2026'];
   const semesters = ['1', '2', '3', '4', '5', '6', '7', '8'];
   const sections = ['A', 'B', 'UV'];
 
-  /* ---------- Users (Accounts) ---------- */
+  const DUPLICATE_ID = 'A record with this ID already exists.';
+  const DUPLICATE_EMAIL = 'A record with this email already exists.';
 
-  const users = [
-    // Students
-    { id: 'u-1', userId: '2021AI001', password: 'student123', role: 'Student', personId: 'S1' },
-    { id: 'u-2', userId: '2021AI002', password: 'student123', role: 'Student', personId: 'S2' },
-    { id: 'u-3', userId: '2021AI003', password: 'student123', role: 'Student', personId: 'S3' },
-    { id: 'u-4', userId: '2021AI004', password: 'student123', role: 'Student', personId: 'S4' },
-    { id: 'u-5', userId: '2021AI005', password: 'student123', role: 'Student', personId: 'S5' },
-    { id: 'u-6', userId: '2021AI006', password: 'student123', role: 'Student', personId: 'S6' },
-    { id: 'u-7', userId: '2021AI007', password: 'student123', role: 'Student', personId: 'S7' },
-    { id: 'u-8', userId: '2021AI008', password: 'student123', role: 'Student', personId: 'S8' },
-    // Staff
-    { id: 'u-9', userId: 'STAFF001', password: 'staff123', role: 'Staff', personId: 'F1' },
-    { id: 'u-10', userId: 'STAFF002', password: 'staff123', role: 'Staff', personId: 'F2' },
-    { id: 'u-11', userId: 'STAFF003', password: 'staff123', role: 'Staff', personId: 'F3' },
-    // HOD
-    { id: 'u-12', userId: 'HODAI001', password: 'hod123', role: 'HOD', personId: 'H1' }
-  ];
-
-  /* ---------- People: Students ---------- */
-
-  const students = [
-    { id: 'S1', registerNumber: '2021AI001', name: 'Arjun Nair', department: 'AI&DS', year: 'IV', semester: '7', section: 'A', email: 'arjun.nair@student.edu', phone: '9876543210', profilePhoto: 'assets/images/default-student.png' },
-    { id: 'S2', registerNumber: '2021AI002', name: 'Divya Sharma', department: 'AI&DS', year: 'IV', semester: '7', section: 'A', email: 'divya.sharma@student.edu', phone: '9876543211', profilePhoto: 'assets/images/default-student.png' },
-    { id: 'S3', registerNumber: '2021AI003', name: 'Rahul Krishnan', department: 'AI&DS', year: 'IV', semester: '7', section: 'A', email: 'rahul.k@student.edu', phone: '9876543212', profilePhoto: 'assets/images/default-student.png' },
-    { id: 'S4', registerNumber: '2021AI004', name: 'Meera Pillai', department: 'AI&DS', year: 'IV', semester: '7', section: 'A', email: 'meera.p@student.edu', phone: '9876543213', profilePhoto: 'assets/images/default-student.png' },
-    { id: 'S5', registerNumber: '2021AI005', name: 'Vikram Singh', department: 'AI&DS', year: 'IV', semester: '7', section: 'A', email: 'vikram.s@student.edu', phone: '9876543214', profilePhoto: 'assets/images/default-student.png' },
-    { id: 'S6', registerNumber: '2021AI006', name: 'Ananya Iyer', department: 'AI&DS', year: 'IV', semester: '7', section: 'A', email: 'ananya.i@student.edu', phone: '9876543215', profilePhoto: 'assets/images/default-student.png' },
-    { id: 'S7', registerNumber: '2021AI007', name: 'Karthik Menon', department: 'AI&DS', year: 'IV', semester: '7', section: 'A', email: 'karthik.m@student.edu', phone: '9876543216', profilePhoto: 'assets/images/default-student.png' },
-    { id: 'S8', registerNumber: '2021AI008', name: 'Riya Thomas', department: 'AI&DS', year: 'IV', semester: '7', section: 'A', email: 'riya.t@student.edu', phone: '9876543217', profilePhoto: 'assets/images/default-student.png' },
-    { id: 'S9', registerNumber: '2022AI001', name: 'Aditya Verma', department: 'AI&DS', year: 'III', semester: '5', section: 'B', email: 'aditya.v@student.edu', phone: '9876543218', profilePhoto: 'assets/images/default-student.png' },
-    { id: 'S10', registerNumber: '2022AI002', name: 'Shreya Ghosh', department: 'AI&DS', year: 'III', semester: '5', section: 'B', email: 'shreya.g@student.edu', phone: '9876543219', profilePhoto: 'assets/images/default-student.png' },
-    { id: 'S11', registerNumber: '2022AI003', name: 'Nikhil Das', department: 'AI&DS', year: 'III', semester: '5', section: 'B', email: 'nikhil.d@student.edu', phone: '9876543220', profilePhoto: 'assets/images/default-student.png' },
-    { id: 'S12', registerNumber: '2022AI004', name: 'Lakshmi Nair', department: 'AI&DS', year: 'III', semester: '5', section: 'B', email: 'lakshmi.n@student.edu', phone: '9876543221', profilePhoto: 'assets/images/default-student.png' },
-    { id: 'S13', registerNumber: '2023AI001', name: 'Rohan Gupta', department: 'AI&DS', year: 'II', semester: '3', section: 'A', email: 'rohan.g@student.edu', phone: '9876543222', profilePhoto: 'assets/images/default-student.png' },
-    { id: 'S14', registerNumber: '2023AI002', name: 'Sneha Reddy', department: 'AI&DS', year: 'II', semester: '3', section: 'A', email: 'sneha.r@student.edu', phone: '9876543223', profilePhoto: 'assets/images/default-student.png' },
-    { id: 'S15', registerNumber: '2023AI003', name: 'Praveen Raj', department: 'AI&DS', year: 'II', semester: '3', section: 'A', email: 'praveen.r@student.edu', phone: '9876543224', profilePhoto: 'assets/images/default-student.png' },
-    { id: 'S16', registerNumber: '2023AI004', name: 'Fatima Khan', department: 'AI&DS', year: 'II', semester: '3', section: 'A', email: 'fatima.k@student.edu', phone: '9876543225', profilePhoto: 'assets/images/default-student.png' },
-    { id: 'S17', registerNumber: '2024AI001', name: 'Arvind Kumar', department: 'AI&DS', year: 'I', semester: '1', section: 'A', email: 'arvind.k@student.edu', phone: '9876543226', profilePhoto: 'assets/images/default-student.png' },
-    { id: 'S18', registerNumber: '2024AI002', name: 'Priya Varma', department: 'AI&DS', year: 'I', semester: '1', section: 'A', email: 'priya.v@student.edu', phone: '9876543227', profilePhoto: 'assets/images/default-student.png' },
-    { id: 'S19', registerNumber: '2024AI003', name: 'Sanjay Bhat', department: 'AI&DS', year: 'I', semester: '1', section: 'A', email: 'sanjay.b@student.edu', phone: '9876543228', profilePhoto: 'assets/images/default-student.png' },
-    { id: 'S20', registerNumber: '2024AI004', name: 'Ishita Malhotra', department: 'AI&DS', year: 'I', semester: '1', section: 'A', email: 'ishita.m@student.edu', phone: '9876543229', profilePhoto: 'assets/images/default-student.png' }
-  ];
-
-  /* ---------- People: Staff ---------- */
-
-  const staff = [
-    { id: 'F1', staffId: 'STAFF001', name: 'Prof. Suresh Kumar', department: 'AI&DS', designation: 'Assistant Professor', email: 'suresh.kumar@college.edu', phone: '9812345670', subjects: ['Machine Learning', 'Data Science Systems and Applications'], classes: ['II', 'IV'], profilePhoto: 'assets/images/default-staff.png' },
-    { id: 'F2', staffId: 'STAFF002', name: 'Dr. Anitha Ram', department: 'AI&DS', designation: 'Associate Professor', email: 'anitha.ram@college.edu', phone: '9812345671', subjects: ['Artificial Intelligence', 'Data Structures'], classes: ['III', 'II'], profilePhoto: 'assets/images/default-staff.png' },
-    { id: 'F3', staffId: 'STAFF003', name: 'Prof. Kiran Rao', department: 'AI&DS', designation: 'Assistant Professor', email: 'kiran.rao@college.edu', phone: '9812345672', subjects: ['Database Management Systems', 'Data Structures'], classes: ['III', 'I'], profilePhoto: 'assets/images/default-staff.png' }
-  ];
-
-  /* ---------- People: HOD ---------- */
-
-  const hods = [
-    { id: 'H1', hodId: 'HODAI001', name: 'Dr. G. Ramesh Kumar', department: 'AI&DS', education: 'Ph.D. Computer Science', email: 'ramesh.kumar@college.edu', phone: '9812345673', profilePhoto: 'assets/images/default-hod.png' }
-  ];
-
-  /* ---------- Attendance Records ---------- */
-
-  // Deterministic pseudo-random generator so data is stable across reloads
-  const mulberry32 = (seed) => {
-    let a = seed;
-    return () => {
-      a |= 0;
-      a = (a + 0x6D2B79F5) | 0;
-      let t = Math.imul(a ^ (a >>> 15), 1 | a);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
+  const read = (key, fallback) => {
+    try {
+      const raw = localStorage.getItem(STORE_KEYS[key]);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch (_e) { return fallback; }
   };
 
-  /* ---------- Profile metadata enrichment (deterministic per record) ---------- */
-
-  const hashStr = (s) => {
-    let h = 0;
-    for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-    return (h >>> 0);
+  const write = (key, value) => {
+    try { localStorage.setItem(STORE_KEYS[key], JSON.stringify(value)); }
+    catch (_e) { /* storage full / unavailable */ }
   };
 
-  const pad2 = (n) => String(n).padStart(2, '0');
-  const isoDate = (y, m, d) => y + '-' + pad2(m) + '-' + pad2(d);
+  const today = () => new Date().toISOString().slice(0, 10);
+  const uid = (prefix) => `${prefix}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
 
-  const enrichPeople = () => {
-    const schoolYear = 2026;
-    students.forEach((st) => {
-      const r = mulberry32(hashStr(st.registerNumber));
-      const regYear = parseInt(st.registerNumber.slice(0, 4), 10) || 2021;
-      st.gender = r() < 0.5 ? 'Male' : 'Female';
-      st.dob = isoDate(regYear - 18, 1 + Math.floor(r() * 12), 1 + Math.floor(r() * 27));
-      st.academicYear = parseInt(st.semester, 10) >= 5 ? '2024-2025' : '2025-2026';
-      st.batch = st.year + ' Year';
-      st.createdAt = isoDate(regYear, 7, 1 + Math.floor(r() * 28));
-      st.lastUpdated = isoDate(schoolYear, 8, 1 + Math.floor(r() * 27));
-      st.lastLogin = isoDate(schoolYear, new Date().getMonth() + 1, 1 + Math.floor(r() * 25));
-      st.status = 'Active';
-    });
-
-    staff.forEach((f) => {
-      const r = mulberry32(hashStr(f.staffId));
-      f.gender = r() < 0.5 ? 'Male' : 'Female';
-      f.dob = isoDate(1978 + Math.floor(r() * 12), 1 + Math.floor(r() * 12), 1 + Math.floor(r() * 27));
-      f.qualification = ['M.Tech (CSE)', 'Ph.D. Computer Science', 'B.E., M.Tech (AI&DS)'][Math.floor(r() * 3)];
-      f.joiningDate = isoDate(2014 + Math.floor(r() * 7), 7, 1 + Math.floor(r() * 28));
-      f.experienceYears = schoolYear - parseInt(f.joiningDate.slice(0, 4), 10);
-      f.academicYear = '2025-2026';
-      f.createdAt = f.joiningDate;
-      f.lastUpdated = isoDate(schoolYear, 7, 1 + Math.floor(r() * 28));
-      f.lastLogin = isoDate(schoolYear, new Date().getMonth() + 1, 1 + Math.floor(r() * 25));
-      f.status = 'Active';
-    });
-
-    hods.forEach((h) => {
-      const r = mulberry32(hashStr(h.hodId));
-      h.gender = r() < 0.5 ? 'Male' : 'Female';
-      h.dob = isoDate(1972 + Math.floor(r() * 6), 1 + Math.floor(r() * 12), 1 + Math.floor(r() * 27));
-      h.qualification = h.education || 'Ph.D. Computer Science';
-      h.joiningDate = isoDate(2008 + Math.floor(r() * 6), 7, 1 + Math.floor(r() * 28));
-      h.experienceYears = schoolYear - parseInt(h.joiningDate.slice(0, 4), 10);
-      h.academicYear = '2025-2026';
-      h.createdAt = h.joiningDate;
-      h.lastUpdated = isoDate(schoolYear, 6, 1 + Math.floor(r() * 28));
-      h.lastLogin = isoDate(schoolYear, new Date().getMonth() + 1, 1 + Math.floor(r() * 25));
-      h.status = 'Active';
-    });
+  const readPwOverrides = () => {
+    try { return JSON.parse(localStorage.getItem('attendance_pw_overrides') || '{}'); }
+    catch (_e) { return {}; }
+  };
+  const writePwOverrides = (overrides) => {
+    try { localStorage.setItem('attendance_pw_overrides', JSON.stringify(overrides)); }
+    catch (_e) { /* ignore */ }
   };
 
-  enrichPeople();
+  /* ---------- In-memory mirrors (loaded from localStorage) ---------- */
 
-  const HISTORY_DAYS = 90;
-  const attendanceSeed = (() => {
-    const records = [];
-    const rand = mulberry32(202600);
-    // Subject codes assigned per staff
-    const staffSubjectMap = {
-      F1: ['ML', 'DSSA'],
-      F2: ['AI', 'DS'],
-      F3: ['DBMS', 'DS']
-    };
-    const subjectOfClass = (classId) => {
-      if (classId === 'I') return ['DBMS'];
-      if (classId === 'II') return ['DS', 'ML', 'DBMS'];
-      if (classId === 'III') return ['AI', 'DS'];
-      return ['DSSA', 'ML'];
-    };
-    const hourOfSubject = (sub) => {
-      const map = { AI: 'H2', ML: 'H3', DS: 'H4', DBMS: 'H1', DSSA: 'H2' };
-      return map[sub] || 'H1';
-    };
+  let students = read('students', []);
+  let staff = read('staff', []);
+  let hods = read('hod', []);
+  let attendanceRecords = read('attendance', []);
+  let subjects = read('subjects', []);
+  let classesList = read('classes', []);
+  let timetableRecords = read('timetable', []);
+  let academicYears = read('academicYears', []);
 
-    const today = new Date();
-    for (let d = HISTORY_DAYS; d >= 0; d--) {
-      const dayDate = new Date(today);
-      dayDate.setDate(today.getDate() - d);
-      const day = dayDate.getDay();
-      if (day === 0 || day === 6) continue; // skip weekends
-      const dateStr = dayDate.toISOString().slice(0, 10);
-
-      for (const cls of classesList) {
-        const subList = subjectOfClass(cls.id);
-        // students belonging to this class (year matches class id)
-        const yearMap = { I: 'I', II: 'II', III: 'III', IV: 'IV' };
-        const clsStudents2 = students.filter((s) => s.year === yearMap[cls.id]);
-        for (const subCode of subList) {
-          const staffPick = Object.keys(staffSubjectMap).find((fid) => staffSubjectMap[fid].includes(subCode));
-          if (!staffPick) continue;
-          const hour = hourOfSubject(subCode);
-          // Each student in that class has attendance for this date/subject/hour (occasionally a class is "not conducted" ~3%)
-          const isHeld = rand() > 0.03;
-          if (!isHeld) continue;
-          for (const stu of clsStudents2) {
-            const r = rand();
-            const status = r < 0.82 ? 'present' : (r < 0.93 ? 'absent' : 'late');
-            records.push({
-              id: `att-${dateStr}-${stu.id}-${subCode}-${hour}-${records.length}`,
-              date: dateStr,
-              studentId: stu.id,
-              studentName: stu.name,
-              registerNumber: stu.registerNumber,
-              subjectCode: subCode,
-              subjectName: subjects.find((s) => s.code === subCode)?.name || subCode,
-              classId: cls.id,
-              className: cls.className,
-              semester: stu.semester,
-              section: stu.section,
-              hour: hour,
-              status: status,
-              staffId: staffPick
-            });
-          }
-        }
-      }
-    }
-    return records;
-  })();
-
-  const attendanceRecords = attendanceSeed;
-
-  /* ---------- Timetable ---------- */
-
-  const periods = ['09:00 - 10:00', '10:00 - 11:00', '11:15 - 12:15', '01:00 - 02:00', '02:00 - 03:00'];
-
-  // Build timetable for each class
-  const buildTimetable = () => {
-    const result = [];
-    const plan = {
-      I: ['DBMS', 'Maths', 'English'],
-      II: ['DS', 'ML', 'DBMS', 'Maths'],
-      III: ['AI', 'DS', 'Open Elective'],
-      IV: ['DSSA', 'ML', 'Project Lab']
-    };
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-    for (const cls of classesList) {
-      const subs = plan[cls.id];
-      days.forEach((day, dayIdx) => {
-        periods.forEach((time, pIdx) => {
-          const subName = subs[pIdx % subs.length];
-          const subExists = subjects.find((s) => s.name === subName);
-          const code = subExists ? subExists.code : (subName === 'Maths' ? 'MA' : subName === 'English' ? 'EN' : subName === 'Open Elective' ? 'OE' : 'PL');
-          // Assign staff deterministically
-          let staffName = 'Prof. Suresh Kumar';
-          const staffForSub = staff.find((f) => f.subjects.some((s) => s === subName));
-          if (staffForSub) staffName = staffForSub.name;
-          result.push({
-            id: `tt-${cls.id}-${day}-${pIdx}`,
-            classId: cls.id,
-            day: day,
-            time: time,
-            subjectName: subName,
-            subjectCode: code,
-            staffName: staffName,
-            room: `Room ${100 + (dayIdx * 2 + pIdx)}`
-          });
-        });
-      });
-    }
-    return result;
+  const persistAll = () => {
+    write('students', students);
+    write('staff', staff);
+    write('hod', hods);
+    write('attendance', attendanceRecords);
+    write('subjects', subjects);
+    write('classes', classesList);
+    write('timetable', timetableRecords);
+    write('academicYears', academicYears);
   };
 
-  const timetableRecords = buildTimetable();
+  /* ---------- Duplicate guards ---------- */
 
-  /* ---------- API-Like Methods ---------- */
+  const norm = (v) => String(v || '').trim().toLowerCase();
+
+  const existsStudentId = (reg, excludeId) =>
+    students.some((s) => s.id !== excludeId && norm(s.registerNumber) === norm(reg));
+  const existsStudentEmail = (email, excludeId) => {
+    const e = String(email || '').trim().toLowerCase();
+    return !!e && students.some((s) => s.id !== excludeId && norm(s.email) === e);
+  };
+  const existsStaffId = (id, excludeId) =>
+    staff.some((f) => f.id !== excludeId && norm(f.staffId) === norm(id));
+  const existsStaffEmail = (email, excludeId) => {
+    const e = String(email || '').trim().toLowerCase();
+    return !!e && staff.some((f) => f.id !== excludeId && norm(f.email) === e);
+  };
+  const existsHodId = (id, excludeId) =>
+    hods.some((h) => h.id !== excludeId && norm(h.hodId) === norm(id));
+  const existsHodEmail = (email, excludeId) => {
+    const e = String(email || '').trim().toLowerCase();
+    return !!e && hods.some((h) => h.id !== excludeId && norm(h.email) === e);
+  };
+  const existsClassId = (id, excludeId) =>
+    classesList.some((c) => c.id !== excludeId && norm(c.id) === norm(id));
+  const existsSubjectCode = (code, excludeId) =>
+    subjects.some((s) => s.id !== excludeId && norm(s.code) === norm(code));
+  const existsAcademicYear = (y) => academicYears.some((a) => norm(a) === norm(y));
+
+  /* ---------- API ---------- */
 
   const api = {
-    /* Auth */
-    login: (userId, password) => {
-      let pwOverrides = {};
-      try { pwOverrides = JSON.parse(localStorage.getItem('attendance_pw_overrides') || '{}'); } catch (_e) { /* ok */ }
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const account = users.find((u) => u.userId.toLowerCase() === userId.toLowerCase());
-          const match = account && (pwOverrides[account.userId] || account.password) === password;
-          if (!match) {
-            resolve({ success: false, message: 'Invalid User ID or Password.' });
-            return;
-          }
-          let person = null;
-          if (account.role === 'Student') person = students.find((s) => s.id === account.personId);
-          else if (account.role === 'Staff') person = staff.find((f) => f.id === account.personId);
-          else if (account.role === 'HOD') person = hods.find((h) => h.id === account.personId);
-          resolve({
-            success: true,
-            user: {
-              id: account.id,
-              userId: account.userId,
-              role: account.role,
-              personId: account.personId,
-              person: person,
-              name: person.name,
-              department: person.department,
-              profilePhoto: person.profilePhoto || null
-            }
-          });
-        }, 700);
-      });
-    },
 
-    /* Getters */
-    getStudents: () => JSON.parse(JSON.stringify(students)),
-    getStaff: () => JSON.parse(JSON.stringify(staff)),
-    getHODs: () => JSON.parse(JSON.stringify(hods)),
-    getClasses: () => JSON.parse(JSON.stringify(classesList)),
-    getSubjects: () => JSON.parse(JSON.stringify(subjects)),
-    getDepartments: () => JSON.parse(JSON.stringify(departments)),
+    /* ===== Auth ===== */
+
+    login: (userId, password) => new Promise((resolve) => {
+      setTimeout(() => {
+        const id = String(userId || '').trim();
+        if (!id || !password) { resolve({ success: false, message: 'Invalid User ID or Password.' }); return; }
+
+        const student = students.find((s) => s.registerNumber && norm(s.registerNumber) === norm(id));
+        const member  = staff.find((f) => f.staffId && norm(f.staffId) === norm(id));
+        const hod     = hods.find((h) => h.hodId && norm(h.hodId) === norm(id));
+
+        const person = student || member || hod;
+        if (!person) { resolve({ success: false, message: 'Invalid User ID or Password.' }); return; }
+
+        const role = student ? 'Student' : member ? 'Staff' : 'HOD';
+        const userId = person.registerNumber || person.staffId || person.hodId;
+        const overrides = readPwOverrides();
+        const expected = overrides[String(userId)] || person.password;
+
+        if (expected !== password) {
+          resolve({ success: false, message: 'Invalid User ID or Password.' });
+          return;
+        }
+
+        person.lastLogin = today();
+        persistAll();
+
+        resolve({
+          success: true,
+          user: {
+            id: person.id,
+            userId,
+            role,
+            personId: person.id,
+            person,
+            name: person.name,
+            department: person.department,
+            profilePhoto: null
+          }
+        });
+      }, 400);
+    }),
+
+    /* ===== Getters ===== */
+
+    getStudents: () => students.map((s) => ({ ...s })),
+    getStaff: () => staff.map((f) => ({ ...f })),
+    getHODs: () => hods.map((h) => ({ ...h })),
+    getClasses: () => classesList.map((c) => ({ ...c })),
+    getSubjects: () => subjects.map((s) => ({ ...s })),
+    getDepartments: () => departments.map((d) => ({ ...d })),
     getAcademicYears: () => [...academicYears],
     getSemesters: () => [...semesters],
     getSections: () => [...sections],
-    getTimetable: () => JSON.parse(JSON.stringify(timetableRecords)),
+    getTimetable: () => timetableRecords.map((t) => ({ ...t })),
 
-    /* Attendance */
-    getAttendance: () => JSON.parse(JSON.stringify(attendanceRecords)),
+    getAttendance: () => attendanceRecords.map((r) => ({ ...r })),
+    getStudentAttendance: (studentId) => attendanceRecords.filter((r) => r.studentId === studentId).map((r) => ({ ...r })),
+    getAttendanceByClass: (className) => attendanceRecords.filter((r) => r.classId === className).map((r) => ({ ...r })),
+    getAttendanceByStaff: (staffId) => attendanceRecords.filter((r) => r.staffId === staffId).map((r) => ({ ...r })),
 
-    getStudentAttendance: (studentId) => {
-      return JSON.parse(JSON.stringify(attendanceRecords.filter((r) => r.studentId === studentId)));
-    },
+    /* ===== Students ===== */
 
-    getAttendanceByClass: (className) => {
-      return JSON.parse(JSON.stringify(attendanceRecords.filter((r) => r.classId === className)));
-    },
-
-    getAttendanceByStaff: (staffId) => {
-      return JSON.parse(JSON.stringify(attendanceRecords.filter((r) => r.staffId === staffId)));
-    },
-
-    /* Submit attendance (simulate POST) */
-    submitAttendance: (payload) => {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const { records } = payload;
-          // Prevent duplicate: same date+class+subject+hour already exists?
-          const first = records[0];
-          const duplicate = attendanceRecords.some(
-            (r) => r.date === first.date && r.classId === first.classId && r.subjectCode === first.subjectCode && r.hour === first.hour
-          );
-          if (duplicate) {
-            resolve({ success: false, message: 'Attendance for this class and hour has already been submitted.' });
-            return;
-          }
-          records.forEach((rec) => attendanceRecords.push({
-            id: `att-new-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-            subjectName: payload.subjectName || rec.subjectName || first.subjectCode,
-            classId: rec.classId,
-            section: rec.section,
-            hour: rec.hour,
-            ...rec,
-            status: rec.status
-          }));
-          resolve({ success: true, message: 'Attendance submitted successfully.' });
-        }, 1000);
-      });
-    },
-
-    /* CRUD-ish helpers for HOD management (in-memory only) */
     addStudent: (data) => {
-      const newId = `S${Date.now()}`;
-      const newStudent = { id: newId, ...data };
-      students.push(newStudent);
-      users.push({ id: `u-${Date.now()}`, userId: data.registerNumber, password: 'student123', role: 'Student', personId: newId });
-      return newStudent;
+      const reg = String(data.registerNumber || '').trim();
+      if (!reg) return { ok: false, message: 'Register Number is required.', record: null };
+      if (existsStudentId(reg)) return { ok: false, message: DUPLICATE_ID, record: null };
+      if (existsStudentEmail(data.email)) return { ok: false, message: DUPLICATE_EMAIL, record: null };
+
+      const record = {
+        id: uid('S'),
+        registerNumber: reg,
+        password: String(data.password || '').trim() || reg,
+        name: String(data.name || '').trim(),
+        department: String(data.department || '').trim() || 'AI&DS',
+        year: String(data.year || '').trim() || 'I',
+        semester: String(data.semester || '').trim(),
+        section: String(data.section || '').trim(),
+        email: String(data.email || '').trim(),
+        phone: String(data.phone || '').trim(),
+        status: 'Active',
+        createdAt: today()
+      };
+
+      students.push(record);
+      persistAll();
+      return { ok: true, message: 'Student added successfully.', record };
     },
+
     updateStudent: (id, data) => {
       const idx = students.findIndex((s) => s.id === id);
-      if (idx > -1) {
-        students[idx] = { ...students[idx], ...data, lastUpdated: new Date().toISOString().slice(0, 10) };
-        const acc = users.find((u) => u.personId === id);
-        if (acc && data.registerNumber) acc.userId = data.registerNumber;
+      if (idx === -1) return { ok: false, message: 'Student not found.', record: null };
+
+      const current = students[idx];
+      const reg = String(data.registerNumber || current.registerNumber || '').trim();
+
+      if (existsStudentId(reg, id)) return { ok: false, message: DUPLICATE_ID, record: null };
+      if (existsStudentEmail(data.email, id)) return { ok: false, message: DUPLICATE_EMAIL, record: null };
+
+      const regChanged = reg !== current.registerNumber;
+      current.registerNumber = reg;
+      current.name = String(data.name ?? current.name).trim();
+      current.department = String(data.department ?? current.department).trim() || 'AI&DS';
+      current.year = String(data.year ?? current.year).trim();
+      current.semester = String(data.semester ?? current.semester).trim();
+      current.section = String(data.section ?? current.section).trim();
+      current.email = String(data.email ?? current.email).trim();
+      current.phone = String(data.phone ?? current.phone).trim();
+      current.dob = data.dob ?? current.dob;
+      current.lastUpdated = today();
+      if (regChanged) {
+        // Login ID changed -> reset the initial password to the new ID.
+        current.password = reg;
+        const overrides = readPwOverrides();
+        delete overrides[current.registerNumber];
+        writePwOverrides(overrides);
       }
-      return students.find((s) => s.id === id);
+
+      persistAll();
+      return { ok: true, message: 'Student updated successfully.', record: current };
     },
+
     removeStudent: (id) => {
       const idx = students.findIndex((s) => s.id === id);
       if (idx > -1) students.splice(idx, 1);
-      const accIdx = users.findIndex((u) => u.personId === id);
-      if (accIdx > -1) users.splice(accIdx, 1);
-    },
-    addStaff: (data) => {
-      const newId = `F${Date.now()}`;
-      const newStaff = { id: newId, ...data };
-      staff.push(newStaff);
-      users.push({ id: `u-${Date.now()}`, userId: data.staffId, password: 'staff123', role: 'Staff', personId: newId });
-      return newStaff;
-    },
-    updateStaff: (id, data) => {
-      const idx = staff.findIndex((f) => f.id === id);
-      if (idx > -1) {
-        staff[idx] = { ...staff[idx], ...data, lastUpdated: new Date().toISOString().slice(0, 10) };
-        const acc = users.find((u) => u.personId === id);
-        if (acc && data.staffId) acc.userId = data.staffId;
-      }
-      return staff.find((f) => f.id === id);
-    },
-    addClass: (data) => {
-      const newClass = { id: `${Date.now()}`, ...data };
-      classesList.push(newClass);
-      return newClass;
-    },
-    addSubject: (data) => {
-      const newSubject = { id: `sub-${Date.now()}`, ...data };
-      subjects.push(newSubject);
-      return newSubject;
+      attendanceRecords = attendanceRecords.filter((r) => r.studentId !== id);
+      persistAll();
     },
 
-    /* Password change (prototype: stores an override in localStorage so a
-       backend can replace this with a real PATCH /api/account/password) */
-    updatePassword: (userId, newPassword) => {
-      let overrides = {};
-      try { overrides = JSON.parse(localStorage.getItem('attendance_pw_overrides') || '{}'); } catch (_e) { /* ok */ }
-      overrides[userId] = newPassword;
-      try {
-        localStorage.setItem('attendance_pw_overrides', JSON.stringify(overrides));
-        const acc = users.find((u) => u.userId.toLowerCase() === String(userId).toLowerCase());
-        if (acc) acc.password = newPassword;
-        return { success: true, message: 'Password updated successfully.' };
-      } catch (_e) {
-        return { success: false, message: 'Could not save the new password.' };
+    /* ===== Staff ===== */
+
+    addStaff: (data) => {
+      const id = String(data.staffId || '').trim();
+      if (!id) return { ok: false, message: 'Staff ID is required.', record: null };
+      if (existsStaffId(id)) return { ok: false, message: DUPLICATE_ID, record: null };
+      if (existsStaffEmail(data.email)) return { ok: false, message: DUPLICATE_EMAIL, record: null };
+
+      const record = {
+        id: uid('F'),
+        staffId: id,
+        password: String(data.password || '').trim() || id,
+        name: String(data.name || '').trim(),
+        department: String(data.department || '').trim() || 'AI&DS',
+        designation: String(data.designation || '').trim(),
+        subjects: Array.isArray(data.subjects) ? data.subjects.map(String) : [],
+        classes: Array.isArray(data.classes) ? data.classes.map(String) : [],
+        email: String(data.email || '').trim(),
+        phone: String(data.phone || '').trim(),
+        status: 'Active',
+        createdAt: today()
+      };
+
+      staff.push(record);
+      persistAll();
+      return { ok: true, message: 'Staff added successfully.', record };
+    },
+
+    updateStaff: (id, data) => {
+      const idx = staff.findIndex((f) => f.id === id);
+      if (idx === -1) return { ok: false, message: 'Staff not found.', record: null };
+
+      const current = staff[idx];
+      const staffId = String(data.staffId || current.staffId || '').trim();
+
+      if (existsStaffId(staffId, id)) return { ok: false, message: DUPLICATE_ID, record: null };
+      if (existsStaffEmail(data.email, id)) return { ok: false, message: DUPLICATE_EMAIL, record: null };
+
+      const idChanged = staffId !== current.staffId;
+      current.staffId = staffId;
+      current.name = String(data.name ?? current.name).trim();
+      current.designation = String(data.designation ?? current.designation).trim();
+      current.subjects = Array.isArray(data.subjects) ? data.subjects.map(String) : current.subjects;
+      current.classes = Array.isArray(data.classes) ? data.classes.map(String) : current.classes;
+      current.email = String(data.email ?? current.email).trim();
+      current.phone = String(data.phone ?? current.phone).trim();
+      current.dob = data.dob ?? current.dob;
+      current.lastUpdated = today();
+      if (idChanged) {
+        current.password = staffId;
+        const overrides = readPwOverrides();
+        delete overrides[current.staffId];
+        writePwOverrides(overrides);
       }
+
+      persistAll();
+      return { ok: true, message: 'Staff updated successfully.', record: current };
+    },
+
+    removeStaff: (id) => {
+      const idx = staff.findIndex((f) => f.id === id);
+      if (idx > -1) staff.splice(idx, 1);
+      persistAll();
+    },
+
+    /* ===== HOD ===== */
+
+    createHOD: (data) => {
+      const id = String(data.hodId || '').trim();
+      if (!id) return { ok: false, message: 'HOD ID is required.', record: null };
+      if (existsHodId(id)) return { ok: false, message: DUPLICATE_ID, record: null };
+      if (existsHodEmail(data.email)) return { ok: false, message: DUPLICATE_EMAIL, record: null };
+      if (!data.password || String(data.password).length < 6) return { ok: false, message: 'Password must be at least 6 characters.', record: null };
+
+      const record = {
+        id: uid('H'),
+        hodId: id,
+        password: String(data.password),
+        name: String(data.name || '').trim(),
+        department: String(data.department || '').trim() || 'AI&DS',
+        designation: 'Head of Department',
+        email: String(data.email || '').trim(),
+        phone: String(data.phone || '').trim(),
+        status: 'Active',
+        createdAt: today()
+      };
+
+      hods.push(record);
+      persistAll();
+      return { ok: true, message: 'HOD account created successfully.', record };
+    },
+
+    updateHod: (id, data) => {
+      const idx = hods.findIndex((h) => h.id === id);
+      if (idx === -1) return { ok: false, message: 'HOD not found.', record: null };
+
+      const current = hods[idx];
+      const hodId = String(data.hodId || current.hodId || '').trim();
+
+      if (existsHodId(hodId, id)) return { ok: false, message: DUPLICATE_ID, record: null };
+      if (existsHodEmail(data.email, id)) return { ok: false, message: DUPLICATE_EMAIL, record: null };
+
+      const idChanged = hodId !== current.hodId;
+      current.hodId = hodId;
+      current.name = String(data.name ?? current.name).trim();
+      current.email = String(data.email ?? current.email).trim();
+      current.phone = String(data.phone ?? current.phone).trim();
+      current.dob = data.dob ?? current.dob;
+      current.lastUpdated = today();
+      if (idChanged) {
+        current.password = hodId;
+        const overrides = readPwOverrides();
+        delete overrides[current.hodId];
+        writePwOverrides(overrides);
+      }
+
+      persistAll();
+      return { ok: true, message: 'HOD profile updated successfully.', record: current };
+    },
+
+    /* ===== Classes / Subjects / Academic Years ===== */
+
+    addClass: (data) => {
+      const id = String(data.id || '').trim();
+      if (!id) return { ok: false, message: 'Class ID is required.', record: null };
+      if (existsClassId(id)) return { ok: false, message: DUPLICATE_ID, record: null };
+
+      const record = {
+        id,
+        label: String(data.label || '').trim(),
+        section: String(data.section || '').trim(),
+        className: String(data.className || '').trim() || `${id} Sem B.Tech AI&DS`
+      };
+      classesList.push(record);
+      persistAll();
+      return { ok: true, message: 'Class added successfully.', record };
+    },
+
+    addSubject: (data) => {
+      const code = String(data.code || '').trim().toUpperCase();
+      if (!code) return { ok: false, message: 'Subject code is required.', record: null };
+      if (existsSubjectCode(code)) return { ok: false, message: DUPLICATE_ID, record: null };
+
+      const record = {
+        id: uid('sub'),
+        code,
+        name: String(data.name || '').trim(),
+        semester: String(data.semester || '').trim()
+      };
+      subjects.push(record);
+      persistAll();
+      return { ok: true, message: 'Subject added successfully.', record };
+    },
+
+    addAcademicYear: (year) => {
+      const y = String(year || '').trim();
+      if (!y) return { ok: false, message: 'Enter an academic year.', record: null };
+      if (existsAcademicYear(y)) return { ok: false, message: DUPLICATE_ID, record: null };
+      academicYears.push(y);
+      persistAll();
+      return { ok: true, message: `Academic year ${y} added.`, record: y };
+    },
+
+    /* ===== Attendance ===== */
+
+    submitAttendance: (payload) => new Promise((resolve) => {
+      setTimeout(() => {
+        const records = payload && payload.records;
+        if (!records || !records.length) { resolve({ success: false, message: 'No attendance records provided.' }); return; }
+
+        const first = records[0];
+        const duplicate = attendanceRecords.some(
+          (r) => r.date === first.date && r.classId === first.classId && r.subjectCode === first.subjectCode && r.hour === first.hour
+        );
+        if (duplicate) { resolve({ success: false, message: 'Attendance for this class and hour has already been submitted.' }); return; }
+
+        const cls = classesList.find((c) => c.id === first.classId);
+        const subject = subjects.find((s) => s.code === first.subjectCode);
+
+        records.forEach((rec) => {
+          attendanceRecords.push({
+            id: `att-new-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            date: rec.date || first.date,
+            studentId: rec.studentId,
+            studentName: rec.studentName,
+            registerNumber: rec.registerNumber,
+            subjectCode: rec.subjectCode || first.subjectCode,
+            subjectName: rec.subjectName || (subject ? subject.name : first.subjectCode),
+            classId: rec.classId || first.classId,
+            className: cls ? cls.className : '',
+            semester: rec.semester || first.semester || '',
+            section: rec.section || first.section || '',
+            hour: rec.hour || first.hour,
+            status: rec.status,
+            staffId: rec.staffId || first.staffId
+          });
+        });
+
+        persistAll();
+        resolve({ success: true, message: 'Attendance submitted successfully.' });
+      }, 500);
+    }),
+
+    /* ===== Password ===== */
+
+    updatePassword: (userId, newPassword) => {
+      const id = String(userId || '').trim();
+      const person = students.find((s) => norm(s.registerNumber) === norm(id))
+        || staff.find((f) => norm(f.staffId) === norm(id))
+        || hods.find((h) => norm(h.hodId) === norm(id));
+
+      if (!person) return { success: false, message: 'Account not found.' };
+      if (!newPassword || String(newPassword).length < 6) return { success: false, message: 'New password must be at least 6 characters.' };
+
+      person.password = String(newPassword);
+      person.passwordUpdatedAt = today();
+      const overrides = readPwOverrides();
+      overrides[person.registerNumber || person.staffId || person.hodId] = String(newPassword);
+      writePwOverrides(overrides);
+      persistAll();
+      return { success: true, message: 'Password updated successfully.' };
+    },
+
+    /* ===== Maintenance ===== */
+
+    hasAccounts: () => students.length > 0 || staff.length > 0 || hods.length > 0,
+
+    resetAllData: () => {
+      students = [];
+      staff = [];
+      hods = [];
+      attendanceRecords = [];
+      subjects = [];
+      classesList = [];
+      timetableRecords = [];
+      academicYears = [];
+      Object.values(STORE_KEYS).forEach((key) => { try { localStorage.removeItem(key); } catch (_e) { /* no-op */ } });
+      try { localStorage.removeItem('attendance_pw_overrides'); } catch (_e) { /* no-op */ }
+      return { ok: true, message: 'All data has been deleted.' };
     }
   };
 

@@ -103,7 +103,7 @@ const StaffApp = (() => {
     // Today's classes table
     const tbody = document.querySelector('#today-classes-tbody');
     if (todayClasses.length === 0) {
-      tbody.innerHTML = TableRenderer.emptyState(6, 'No classes scheduled for today.');
+      tbody.innerHTML = TableRenderer.emptyState(6, 'No Timetable Available');
       return;
     }
 
@@ -615,7 +615,7 @@ const StaffApp = (() => {
       document.getElementById('h-count').textContent = `${groups.length} session(s)`;
 
       if (rows.length === 0) {
-        tbody.innerHTML = TableRenderer.emptyState(10, 'No attendance records found.');
+        tbody.innerHTML = TableRenderer.emptyState(10, 'No Attendance Records');
       } else {
         tbody.innerHTML = rows.map((g) => `
           <tr>
@@ -712,7 +712,7 @@ const StaffApp = (() => {
     const allAtt = DB.getAttendance();
 
     document.getElementById('students-subtitle').textContent =
-      `${students.length} students in your assigned classes (${assignedClasses.join(', ')})`;
+      `${students.length} students in your assigned classes (${assignedClasses.length ? assignedClasses.join(', ') : 'none'})`;
 
     const summary = (studentId) => {
       const recs = allAtt.filter((r) => r.studentId === studentId);
@@ -729,7 +729,7 @@ const StaffApp = (() => {
       const rows = Utils.paginate(filtered, page, PER_PAGE);
 
       if (rows.length === 0) {
-        tbody.innerHTML = TableRenderer.emptyState(6, 'No students found.');
+        tbody.innerHTML = TableRenderer.emptyState(6, 'No Students Added');
       } else {
         tbody.innerHTML = rows.map((st) => {
           const stat = summary(st.id);
@@ -786,7 +786,7 @@ const StaffApp = (() => {
         <div class="table-responsive" style="max-height:340px;overflow-y:auto">
           <table class="table">
             <thead><tr><th>Date</th><th>Subject</th><th>Status</th></tr></thead>
-            <tbody>${rows || TableRenderer.emptyState(3)}</tbody>
+            <tbody>${rows || TableRenderer.emptyState(3, 'No Attendance Records')}</tbody>
           </table>
         </div>
       `
