@@ -1,0 +1,102 @@
+/* ============================================================
+   RPSIT College Branding - reusable component
+   Used by: login page (index.html), profile page (profile.html)
+   ============================================================ */
+
+.college-branding {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.college-logo {
+  width: clamp(95px, 12vw, 115px);
+  height: auto;
+  aspect-ratio: auto;
+  flex-shrink: 0;
+}
+
+.college-name-block h1 {
+  font-size: clamp(20px, 2.6vw, 27px);
+  font-weight: 800;
+  line-height: 1.18;
+  letter-spacing: -0.3px;
+  color: #17244f;
+}
+
+.college-name-block p {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+/* ----- Compact banner variant (dashboard / profile pages) ----- */
+
+.branding-banner {
+  background: var(--white);
+  border-bottom: 1px solid var(--border-light);
+  box-shadow: 0 1px 3px rgba(20, 39, 83, 0.06);
+  padding: 14px 24px;
+}
+
+.branding-banner .branding-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.branding-banner .college-branding {
+  gap: 18px;
+}
+
+.branding-banner .college-logo {
+  width: 64px;
+}
+
+.branding-banner .college-name-block h1 {
+  font-size: clamp(17px, 1.9vw, 21px);
+  letter-spacing: 0.1px;
+}
+
+.branding-banner .college-name-block p {
+  margin-top: 3px;
+  font-size: 10.5px;
+  letter-spacing: 2.5px;
+}
+
+/* ----- Placement inside dashboard content area ----- */
+
+.main-content .branding-banner {
+  margin: -28px -28px 24px;
+}
+
+@media (max-width: 768px) {
+  .main-content .branding-banner {
+    margin: -18px -16px 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .branding-banner {
+    padding: 12px 16px;
+  }
+
+  .branding-banner .college-branding {
+    gap: 12px;
+  }
+
+  .branding-banner .college-logo {
+    width: 52px;
+  }
+
+  .branding-banner .college-name-block h1 {
+    font-size: 16px;
+  }
+
+  .branding-banner .college-name-block p {
+    font-size: 9.5px;
+    letter-spacing: 1.8px;
+  }
+}

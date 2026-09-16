@@ -1,6 +1,6 @@
 .rpsit-body {
-  --primary-navy: #0b2a6b;
-  --primary-navy-dark: #081f52;
+  --primary-navy: #142753;
+  --primary-navy-dark: #0f2044;
   --secondary-navy: #21418f;
   --text-dark: #16233b;
   --text-muted: #64748b;
@@ -45,7 +45,7 @@
 }
 
 .rpsit-topbar {
-  background: var(--primary-navy-dark);
+  background: var(--primary-navy);
   color: #fff;
   position: relative;
   z-index: 20;
@@ -129,43 +129,8 @@
 .rpsit-brand {
   background: var(--white);
   border-bottom: 1px solid var(--border-light);
-  box-shadow: 0 1px 3px rgba(11, 42, 107, 0.06);
-}
-
-.rpsit-brand-inner {
-  padding-top: 16px;
-  padding-bottom: 16px;
-}
-
-.rpsit-brand-lockup {
-  display: inline-flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.rpsit-emblem {
-  display: block;
-  width: 74px;
-  height: 74px;
-  flex-shrink: 0;
-}
-
-.rpsit-brand-text h1 {
-  font-size: clamp(20px, 2.6vw, 27px);
-  font-weight: 800;
-  line-height: 1.15;
-  letter-spacing: -0.3px;
-  color: var(--primary-navy);
-}
-
-.rpsit-autonomy {
-  display: block;
-  margin-top: 3px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  color: var(--secondary-navy);
+  box-shadow: 0 1px 3px rgba(20, 39, 83, 0.06);
+  padding: 18px 0;
 }
 
 .rpsit-main {
@@ -208,7 +173,7 @@
   background: var(--white);
   border: 1px solid var(--border-light);
   border-radius: 16px;
-  box-shadow: 0 24px 60px rgba(11, 42, 107, 0.14);
+  box-shadow: 0 24px 60px rgba(20, 39, 83, 0.14);
   padding: 32px 32px 30px;
   animation: rpsitFade 0.4s ease;
   align-self: flex-start;
@@ -233,7 +198,7 @@
   letter-spacing: 0.5px;
   padding: 10px 30px;
   border-radius: 999px;
-  box-shadow: 0 6px 16px rgba(11, 42, 107, 0.25);
+  box-shadow: 0 6px 16px rgba(20, 39, 83, 0.25);
 }
 
 .login-subtitle {
@@ -364,7 +329,7 @@
 .login-input-group input:focus {
   outline: none;
   border-color: var(--primary-navy);
-  box-shadow: 0 0 0 3px rgba(11, 42, 107, 0.12);
+  box-shadow: 0 0 0 3px rgba(20, 39, 83, 0.12);
 }
 
 .login-input-group input.invalid {
@@ -490,14 +455,14 @@
   align-items: center;
   justify-content: center;
   gap: 9px;
-  box-shadow: 0 8px 20px rgba(11, 42, 107, 0.25);
+  box-shadow: 0 8px 20px rgba(20, 39, 83, 0.25);
   transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
 }
 
 .login-btn:hover {
   background: var(--primary-navy-dark);
   transform: translateY(-1px);
-  box-shadow: 0 10px 24px rgba(11, 42, 107, 0.3);
+  box-shadow: 0 10px 24px rgba(20, 39, 83, 0.3);
 }
 
 .login-btn:active {
@@ -514,7 +479,7 @@
 }
 
 .login-btn:focus-visible {
-  outline: 3px solid rgba(11, 42, 107, 0.35);
+  outline: 3px solid rgba(20, 39, 83, 0.35);
   outline-offset: 2px;
 }
 
@@ -539,7 +504,7 @@
 }
 
 .rpsit-footer {
-  background: var(--primary-navy-dark);
+  background: var(--primary-navy);
   color: rgba(255, 255, 255, 0.85);
   font-size: 12.5px;
   text-align: center;
@@ -557,7 +522,7 @@
 .rpsit-body .form-control:focus {
   outline: none;
   border-color: var(--primary-navy);
-  box-shadow: 0 0 0 3px rgba(11, 42, 107, 0.12);
+  box-shadow: 0 0 0 3px rgba(20, 39, 83, 0.12);
 }
 
 .reset-help {
@@ -576,7 +541,7 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 0;
-    background: var(--primary-navy-dark);
+    background: var(--primary-navy);
     border-top: 1px solid rgba(255, 255, 255, 0.12);
     padding: 6px 20px 14px;
   }
@@ -595,18 +560,8 @@
     display: inline-flex;
   }
 
-  .rpsit-emblem {
-    width: 62px;
-    height: 62px;
-  }
-
-  .rpsit-brand-text h1 {
-    font-size: 20px;
-  }
-
-  .rpsit-autonomy {
-    letter-spacing: 2px;
-    font-size: 11px;
+  .rpsit-brand {
+    padding: 14px 0;
   }
 
   .rpsit-topbar-dot {
@@ -642,24 +597,6 @@
 }
 
 @media (max-width: 360px) {
-  .rpsit-brand-lockup {
-    gap: 12px;
-  }
-
-  .rpsit-emblem {
-    width: 54px;
-    height: 54px;
-  }
-
-  .rpsit-brand-text h1 {
-    font-size: 17px;
-  }
-
-  .rpsit-autonomy {
-    letter-spacing: 1.5px;
-    font-size: 10px;
-  }
-
   .captcha-row {
     flex-wrap: wrap;
   }

@@ -131,9 +131,9 @@ window.DB = (() => {
         if (!person) { resolve({ success: false, message: 'Invalid User ID or Password.' }); return; }
 
         const role = student ? 'Student' : member ? 'Staff' : 'HOD';
-        const userId = person.registerNumber || person.staffId || person.hodId;
+        const personUserId = person.registerNumber || person.staffId || person.hodId;
         const overrides = readPwOverrides();
-        const expected = overrides[String(userId)] || person.password;
+        const expected = overrides[String(personUserId)] || person.password;
 
         if (expected !== password) {
           resolve({ success: false, message: 'Invalid User ID or Password.' });
@@ -147,7 +147,7 @@ window.DB = (() => {
           success: true,
           user: {
             id: person.id,
-            userId,
+            userId: personUserId,
             role,
             personId: person.id,
             person,
