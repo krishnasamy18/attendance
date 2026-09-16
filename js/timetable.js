@@ -1,0 +1,138 @@
+/* ============================================================
+   Timetable Module
+   ------------------------------------------------------------
+   Role-aware weekly timetable:
+   - Student: their class timetable only.
+   - Staff: their assigned classes/subjects.
+   - HOD: department timetable with class selector.
+   ============================================================ */
+
+const TimetableApp = (() => {
+
+  const session = () => Auth.getSession();
+  const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+  const DAY_FULL = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday' };
+
+  const classLabel = (id) => ({ I: 'I Sem', II: 'II Sem', III: 'III Sem', IV: 'IV Sem' }[id] || id);
+
+  const init = () => {
+    const s = Auth.getSession();
+    if (!s) { window.location.href = 'index.html'; return; }
+    if (!Auth.protectPage('timetable', 'Timetable')) return;
+
+    AppLayout.init('timetable.html');
+
+    const mount = document.getElementById('app-content');
+    if (!mount) return;
+
+    const person = s.person;
+    const tt = DB.getTimetable();
+    const periods = [...new Set(tt.map((t) => t.time))];
+
+    let scopeTitle = '';
+    let filterFn = null;
+
+    if (s.role === 'Student') {
+      const classId = person.year; // I-IV
+      scopeTitle = `${classId} Sem AI & DS · Student`;
+      filterFn = (t) => t.classId === classId;
+    } else if (s.role === 'Staff') {
+      const assignedClasses = person.classes || [];
+      const subjectNames = person.subjects || [];
+      const subjectCodes = DB.getSubjects().filter((x) => subjectNames.includes(x.name)).map((x) => x.code);
+      scopeTitle = `${person.name} · Assigned`;
+      filterFn = (t) => assignedClasses.includes(t.classId) && (subjectCodes.includes(t.subjectCode) || t.staffName === person.name);
+    } else {
+      scopeTitle = 'Department · AI & DS';
+      filterFn = null; // all, with optional class selector
+    }
+
+    const classes = DB.getClasses();
+    const classOptions = classes.map((c) => `<option value="${esc(c.id)}">${esc(classLabel(c.id))} AI &amp; DS</option>`).join('');
+
+    mount.innerHTML = `
+      <div class="page-header">
+        <div>
+          <h1>Timetable</h1>
+          <p id="tt-scope">${esc(scopeTitle)}</p>
+        </div>
+        ${s.role === 'HOD' ? `
+          <div class="flex items-center gap-10">
+            <label for="tt-class" class="text-muted" style="font-size:13px;font-weight:600">Class:</label>
+            <select class="form-control" id="tt-class" style="width:auto;min-width:180px" aria-label="Select class">
+              ${classOptions}
+            </select>
+          </div>
+        ` : ''}
+      </div>
+
+      <div class="card">
+        <div class="table-responsive">
+          <table class="table" id="tt-table"></table>
+        </div>
+      </div>
+    `;
+
+    const render = (classIdOverride) => {
+      let effectiveFilter = filterFn;
+      if (s.role === 'HOD' && classIdOverride) {
+        effectiveFilter = (t) => t.classId === classIdOverride;
+      }
+
+      const scrollEl = mount.querySelector('#tt-table');
+      let html = `<thead><tr><th style="min-width:140px">Time</th>`;
+      DAYS.forEach((d) => { html += `<th style="min-width:150px">${DAY_FULL[d]}</th>`; });
+      html += `</tr></thead><tbody>`;
+
+      let anyCell = false;
+      periods.forEach((time) => {
+        html += `<tr><td><strong>${esc(time)}</strong></td>`;
+        DAYS.forEach((day) => {
+          const cell = tt.find((t) => t.day === day && t.time === time && (!effectiveFilter || effectiveFilter(t)));
+          if (cell) {
+            anyCell = true;
+            const isToday = day === new Date().toString().slice(0, 3);
+            html += `
+              <td ${isToday ? 'style="background:var(--primary-bg)"' : ''}>
+                <div class="tt-card">
+                  <span class="tt-subject">${esc(cell.subjectName)}</span>
+                  <span class="tt-staff">${esc(cell.staffName)}</span>
+                  <span class="tt-room"><i class="fas fa-door-open"></i> ${esc(cell.room)}</span>
+                </div>
+              </td>`;
+          } else {
+            html += `<td><span class="text-muted" style="font-size:12px">—</span></td>`;
+          }
+        });
+        html += `</tr>`;
+      });
+
+      if (!anyCell) {
+        html += `<tr><td colspan="6"><div class="empty-state"><i class="fas fa-calendar-xmark"></i><h4>No timetable entries found.</h4></div></td></tr>`;
+      }
+
+      html += `</tbody>`;
+      scrollEl.innerHTML = html;
+    };
+
+    if (s.role === 'HOD') {
+      document.getElementById('tt-class').addEventListener('change', (e) => {
+        const value = e.target.value;
+        document.getElementById('tt-scope').textContent = `${classLabel(value)} AI & DS · Department`;
+        render(value);
+      });
+    }
+
+    render(s.role === 'HOD' ? 'I' : null);
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  return { init };
+})();
+
+window.TimetableApp = TimetableApp;

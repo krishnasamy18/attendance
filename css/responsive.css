@@ -1,0 +1,172 @@
+/* ============================================================
+   Responsive Styles
+   ============================================================ */
+
+/* ---------- Large tablets / small laptops ---------- */
+
+@media (max-width: 1200px) {
+  .stat-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+}
+
+/* ---------- Tablets ---------- */
+
+@media (max-width: 992px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .hamburger {
+    display: flex;
+  }
+
+  .top-header {
+    left: 0;
+  }
+
+  .main-content {
+    margin-left: 0;
+  }
+
+  .sidebar-backdrop.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .filters-bar .form-group {
+    min-width: 130px;
+  }
+}
+
+/* ---------- Mobile ---------- */
+
+@media (max-width: 768px) {
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-header h1 {
+    font-size: 20px;
+  }
+
+  .modal {
+    max-width: 100%;
+    margin: 0 8px;
+  }
+
+  .header-title {
+    font-size: 14px;
+  }
+
+  .top-header {
+    padding: 0 14px;
+  }
+
+  .header-user-info {
+    display: none;
+  }
+
+  .main-content {
+    padding: calc(var(--header-height) + 18px) 16px 30px;
+  }
+
+  .filters-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filters-bar .form-group {
+    min-width: 100%;
+  }
+
+  .filters-bar .btn {
+    width: 100%;
+  }
+
+  .legend-wrap {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .table-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-box {
+    max-width: none;
+  }
+
+  .tabs {
+    margin-bottom: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stat-card {
+    padding: 14px;
+  }
+
+  .stat-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+
+  .stat-info h3 {
+    font-size: 20px;
+  }
+
+  .card {
+    padding: 14px;
+  }
+
+  .toast-container {
+    left: 12px;
+    right: 12px;
+  }
+
+  .toast {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .pagination .page-info {
+    display: none;
+  }
+
+  .pagination button {
+    min-width: 32px;
+    height: 32px;
+  }
+
+  .btn {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  .actions .btn {
+    padding: 5px 8px;
+  }
+
+  /* Card-based tables on small mobile if needed */
+  .ring {
+    width: 110px;
+    height: 110px;
+  }
+
+  .ring .ring-value {
+    font-size: 22px;
+  }
+}
+
+/* ---------- Print utilities are in style.css ---------- */

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile | Attendance System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body class="dashboard-body">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+  <header class="top-header">
+    <div class="top-header-left">
+      <button class="hamburger" id="hamburger" aria-label="Toggle menu"><i class="fas fa-bars"></i></button>
+      <h1 class="header-title" id="header-title">Profile</h1>
+    </div>
+    <div class="top-header-right">
+      <button class="header-icon-btn" id="notif-btn" aria-label="Notifications">
+        <i class="fas fa-bell"></i>
+        <span class="notif-badge">3</span>
+      </button>
+      <div class="header-user" id="header-user" role="button" aria-label="Profile">
+        <div class="header-user-info">
+          <div class="name"></div>
+          <div class="role"></div>
+        </div>
+        <div class="avatar" style="width:38px;height:38px;font-size:14px"></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="notif-dropdown" id="notif-dropdown">
+    <div class="notif-head">Notifications</div>
+    <div class="notif-list" id="notif-list"></div>
+  </div>
+
+  <div class="profile-dropdown" id="profile-dropdown">
+    <div class="profile-dd-head">
+      <div class="avatar"></div>
+      <div>
+        <div class="name"></div>
+        <div class="role" id="dd-role"></div>
+      </div>
+    </div>
+    <button class="profile-dd-item" data-dd-profile><i class="fas fa-user"></i>My Profile</button>
+    <button class="profile-dd-item" data-dd-logout><i class="fas fa-power-off"></i>Logout</button>
+  </div>
+
+  <main class="main-content">
+    <div id="app-content"></div>
+  </main>
+
+  <script src="js/mock-data.js"></script>
+  <script src="js/auth.js"></script>
+    <script src="js/photo.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/profile.js"></script>
+</body>
+</html>

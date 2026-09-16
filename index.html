@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | Attendance Management System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/login.css">
+</head>
+<body class="login-body">
+  <div class="login-bg-pattern"></div>
+
+  <div class="login-wrapper">
+    <!-- Left branding panel -->
+    <div class="login-left">
+      <div class="login-brand">
+        <div class="login-logo"><i class="fas fa-graduation-cap"></i></div>
+        <div class="login-brand-text">
+          <h2>Attendance System</h2>
+          <span>College of Engineering &amp; Technology</span>
+        </div>
+      </div>
+
+      <div class="login-left-title">
+        <h1>Attendance Management System</h1>
+        <p>Manage attendance smarter and faster for students, staff and the department.</p>
+      </div>
+
+      <div class="login-features">
+        <div class="login-feature"><i class="fas fa-clipboard-check"></i> Student attendance at a glance</div>
+        <div class="login-feature"><i class="fas fa-chalkboard-user"></i> Staff-driven attendance marking</div>
+        <div class="login-feature"><i class="fas fa-chart-line"></i> Department-wide monitoring for HOD</div>
+        <div class="login-feature"><i class="fas fa-shield-halved"></i> Role-based secure access</div>
+      </div>
+    </div>
+
+    <!-- Right form panel -->
+    <div class="login-right">
+      <div class="login-form-head">
+        <h3>Welcome Back</h3>
+        <p>Sign in to continue to your dashboard</p>
+      </div>
+
+      <div class="login-error-box" id="login-error" role="alert">
+        <i class="fas fa-circle-exclamation"></i>
+        <span id="login-error-msg">Invalid credentials.</span>
+      </div>
+
+      <form id="login-form" novalidate autocomplete="off">
+        <div class="form-group">
+          <label for="role" id="role-label">Select Role <span class="required">*</span></label>
+          <div class="role-selector" id="role-selector" role="radiogroup" aria-label="Select your role">
+            <label class="role-option">
+              <input type="radio" name="role" value="Student" checked>
+              <div class="role-card">
+                <i class="fas fa-user-graduate"></i>
+                <span>Student</span>
+              </div>
+            </label>
+            <label class="role-option">
+              <input type="radio" name="role" value="Staff">
+              <div class="role-card">
+                <i class="fas fa-chalkboard-user"></i>
+                <span>Staff</span>
+              </div>
+            </label>
+            <label class="role-option">
+              <input type="radio" name="role" value="HOD">
+              <div class="role-card">
+                <i class="fas fa-user-tie"></i>
+                <span>HOD</span>
+              </div>
+            </label>
+          </div>
+          <div class="form-error" id="err-role">Please select a role.</div>
+        </div>
+
+        <div class="login-input-group">
+          <i class="fas fa-id-card"></i>
+          <input type="text" id="userid" placeholder="User ID / Register Number" autocomplete="username" aria-label="User ID or Register Number">
+        </div>
+        <div class="form-error" id="err-userid" style="margin:-8px 0 12px">Please enter your User ID / Register Number.</div>
+
+        <div class="login-input-group">
+          <i class="fas fa-lock"></i>
+          <input type="password" id="password" placeholder="Password" autocomplete="current-password" aria-label="Password">
+          <button type="button" class="password-toggle" id="toggle-password" aria-label="Show or hide password">
+            <i class="fas fa-eye" id="toggle-icon"></i>
+          </button>
+        </div>
+        <div class="form-error" id="err-password" style="margin:-8px 0 12px">Please enter your password.</div>
+
+        <div class="login-options">
+          <label class="remember-me">
+            <input type="checkbox" id="remember" checked>
+            <span>Remember me</span>
+          </label>
+          <button type="button" class="forgot-link" id="forgot-link">Forgot password?</button>
+        </div>
+
+        <button type="submit" class="login-btn" id="login-btn">
+          <i class="fas fa-right-to-bracket"></i>
+          Login
+        </button>
+      </form>
+
+      <div class="login-hint">
+        <strong>Demo accounts</strong><br>
+        Student: <code>2021AI001</code> / <code>student123</code><br>
+        Staff: <code>STAFF001</code> / <code>staff123</code><br>
+        HOD: <code>HODAI001</code> / <code>hod123</code>
+      </div>
+    </div>
+  </div>
+
+  <div class="login-footer">© 2026 College of Engineering &amp; Technology · Attendance Management System</div>
+
+  <!-- Forgot password modal -->
+  <div class="modal-overlay" id="forgot-modal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="forgot-title">
+      <div class="modal-header">
+        <h3 id="forgot-title">Reset Password</h3>
+        <button class="modal-close" data-forgot-close aria-label="Close"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <p class="reset-help">Enter your User ID. A reset link will be sent to your registered email after verification.</p>
+        <div class="form-group">
+          <label for="reset-userid">User ID / Register Number <span class="required">*</span></label>
+          <input type="text" id="reset-userid" class="form-control" placeholder="e.g. 2021AI001">
+        </div>
+        <div class="form-error" id="err-reset">Please enter your User ID.</div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" data-forgot-close>Cancel</button>
+        <button class="btn btn-primary" id="reset-submit">
+          <i class="fas fa-paper-plane"></i> Send Reset Link
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/mock-data.js"></script>
+  <script src="js/auth.js"></script>
+    <script src="js/photo.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      // Redirect already-logged-in users
+      const session = Auth.getSession();
+      if (session) {
+        window.location.href = Auth.getHomeURL(session.role);
+        return;
+      }
+
+      const form = document.getElementById('login-form');
+      const roleInputs = form.querySelectorAll('input[name="role"]');
+      const userId = document.getElementById('userid');
+      const password = document.getElementById('password');
+      const loginBtn = document.getElementById('login-btn');
+      const errorBox = document.getElementById('login-error');
+      const errorMsg = document.getElementById('login-error-msg');
+      const forgotModal = document.getElementById('forgot-modal');
+
+      // Prefill remembered User ID
+      const remembered = localStorage.getItem('attendance_remembered_id');
+      if (remembered) userId.value = remembered;
+
+      // Show/Hide password
+      const togglePw = document.getElementById('toggle-password');
+      togglePw.addEventListener('click', () => {
+        const isPw = password.type === 'password';
+        password.type = isPw ? 'text' : 'password';
+        document.getElementById('toggle-icon').className = isPw ? 'fas fa-eye-slash' : 'fas fa-eye';
+        togglePw.setAttribute('aria-label', isPw ? 'Hide password' : 'Show password');
+      });
+
+      // Validate fields
+      const clearError = (el) => {
+        el.classList.remove('invalid');
+        const err = el.closest('.login-input-group, .form-group').querySelector('.form-error');
+        if (err) err.classList.remove('show');
+      };
+
+      userId.addEventListener('input', () => clearError(userId));
+      password.addEventListener('input', () => clearError(password));
+      roleInputs.forEach((r) => r.addEventListener('change', () => {
+        document.getElementById('err-role').classList.remove('show');
+      }));
+
+      function setError(input, errEl) {
+        input.classList.add('invalid');
+        errEl.classList.add('show');
+      }
+
+      const redirectToDashboard = (role) => {
+        if (role === 'Student') window.location.href = 'student-dashboard.html';
+        else if (role === 'Staff') window.location.href = 'staff-dashboard.html';
+        else window.location.href = 'hod-dashboard.html';
+      };
+
+      // Submit
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        errorBox.classList.remove('show');
+        let valid = true;
+
+        if (!form.querySelector('input[name="role"]:checked')) {
+          document.getElementById('err-role').classList.add('show');
+          valid = false;
+        }
+
+        const uid = userId.value.trim();
+        if (!uid) { setError(userId, document.getElementById('err-userid')); valid = false; }
+
+        const pw = password.value;
+        if (!pw) { setError(password, document.getElementById('err-password')); valid = false; }
+
+        if (!valid) return;
+
+        // Loading state
+        loginBtn.disabled = true;
+        loginBtn.innerHTML = '<span class="spinner"></span> Signing in...';
+
+        const result = await Auth.login(uid, pw, document.getElementById('remember').checked);
+
+        if (result.success) {
+          Toast.success(`Welcome, ${result.user.name}!`);
+          setTimeout(() => redirectToDashboard(result.user.role), 400);
+        } else {
+          loginBtn.disabled = false;
+          loginBtn.innerHTML = '<i class="fas fa-right-to-bracket"></i> Login';
+          errorMsg.textContent = result.message;
+          errorBox.classList.add('show');
+        }
+      });
+
+      // Forgot password
+      document.getElementById('forgot-link').addEventListener('click', () => forgottenOpen());
+      forgotModal.querySelectorAll('[data-forgot-close]').forEach((b) => b.addEventListener('click', forgottenClose));
+      forgotModal.addEventListener('click', (e) => { if (e.target === forgotModal) forgottenClose(); });
+
+      function forgottenOpen() {
+        forgotModal.classList.add('active');
+        setTimeout(() => document.getElementById('reset-userid').focus(), 200);
+      }
+      function forgottenClose() {
+        forgotModal.classList.remove('active');
+        document.getElementById('err-reset').classList.remove('show');
+      }
+      document.getElementById('reset-submit').addEventListener('click', () => {
+        const uid = document.getElementById('reset-userid').value.trim();
+        const err = document.getElementById('err-reset');
+        if (!uid) { err.textContent = 'Please enter your User ID.'; err.classList.add('show'); return; }
+        err.classList.remove('show');
+        Toast.info('If that account exists, a reset link has been sent to your registered email.');
+        forgottenClose();
+      });
+
+      // Escape key closes modal
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') forgottenClose();
+      });
+    })();
+  </script>
+</body>
+</html>
