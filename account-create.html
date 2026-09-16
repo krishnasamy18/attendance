@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account | R P Sarathy Institute of Technology</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/branding.css">
+  <link rel="stylesheet" href="css/login.css">
+</head>
+<body class="rpsit-body">
+  <a class="skip-link" href="#signup-title">Skip to account creation</a>
+
+  <header class="rpsit-topbar">
+    <div class="rpsit-container rpsit-topbar-inner">
+      <div class="rpsit-topbar-left">
+        <span class="rpsit-topbar-item"><i class="fas fa-award" aria-hidden="true"></i> NAAC A++ Accredited</span>
+        <span class="rpsit-topbar-dot" aria-hidden="true"></span>
+        <span class="rpsit-topbar-item"><i class="fas fa-map-marker-alt" aria-hidden="true"></i> Salem, Tamil Nadu</span>
+      </div>
+      <nav class="rpsit-topnav" id="rpsit-topnav" aria-label="Quick links">
+        <a href="#">Alumni</a>
+        <a href="#">RPSIT - Mindbox</a>
+        <a href="#">IQAC</a>
+        <a href="#">Events</a>
+      </nav>
+      <button class="rpsit-menu-btn" id="rpsit-menu-btn" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="rpsit-topnav">
+        <i class="fas fa-bars" aria-hidden="true"></i>
+      </button>
+    </div>
+  </header>
+
+  <header class="rpsit-brand">
+    <div class="rpsit-container">
+      <div class="college-branding">
+        <img class="college-logo" src="assets/images/rpsit-logo.png" alt="" aria-hidden="true" onerror="this.style.visibility='hidden'">
+        <div class="college-name-block">
+          <h1>R P Sarathy Institute of Technology</h1>
+          <p>AN AUTONOMOUS INSTITUTION</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="rpsit-main">
+    <div class="rpsit-campus-bg" aria-hidden="true">
+      <svg class="rpsit-campus-skyline" viewBox="0 0 1440 320" preserveAspectRatio="xMidYMax slice">
+        <path fill="#d9e4f5" d="M0 260 L80 260 L80 200 L140 200 L140 240 L180 240 L180 150 L240 150 L240 210 L300 210 L300 250 L360 250 L360 120 L430 120 L430 180 L500 180 L500 230 L560 230 L560 260 L640 260 L640 190 L710 190 L710 110 L780 110 L780 160 L860 160 L860 230 L940 230 L940 200 L1010 200 L1010 150 L1080 150 L1080 210 L1150 210 L1150 245 L1210 245 L1210 175 L1280 175 L1280 220 L1360 220 L1360 260 L1440 260 L1440 320 L0 320 Z"/>
+      </svg>
+    </div>
+
+    <div class="rpsit-container rpsit-main-inner">
+      <section class="login-card signup-card" id="signup-card" aria-labelledby="signup-title">
+        <div class="login-form-head">
+          <h2 class="login-pill" id="signup-title">Create Account</h2>
+          <p class="login-subtitle">Create your account, then sign in with the same details</p>
+        </div>
+
+        <div class="login-error-box" id="signup-error" role="alert">
+          <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
+          <span id="signup-error-msg">Please check the highlighted fields.</span>
+        </div>
+
+        <form id="signup-form" novalidate autocomplete="off">
+          <div class="form-group">
+            <label id="signup-role-label">I am signing up as <span class="required">*</span></label>
+            <div class="role-selector" id="signup-role-selector" role="radiogroup" aria-label="Select your role">
+              <label class="role-option">
+                <input type="radio" name="srole" value="Student" checked>
+                <div class="role-card">
+                  <i class="fas fa-user-graduate" aria-hidden="true"></i>
+                  <span>Student</span>
+                </div>
+              </label>
+              <label class="role-option">
+                <input type="radio" name="srole" value="Staff">
+                <div class="role-card">
+                  <i class="fas fa-chalkboard-user" aria-hidden="true"></i>
+                  <span>Staff</span>
+                </div>
+              </label>
+              <label class="role-option">
+                <input type="radio" name="srole" value="HOD">
+                <div class="role-card">
+                  <i class="fas fa-user-tie" aria-hidden="true"></i>
+                  <span>HOD</span>
+                </div>
+              </label>
+            </div>
+            <div class="form-error" id="err-srole">Please select a role.</div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group field-group">
+              <label for="signup-name">Full Name <span class="required">*</span></label>
+              <div class="login-input-group">
+                <i class="fas fa-id-card" aria-hidden="true"></i>
+                <input type="text" id="signup-name" placeholder="Enter your full name" autocomplete="name">
+              </div>
+              <div class="form-error" id="err-name">Please enter your full name.</div>
+            </div>
+
+            <div class="form-group field-group">
+              <label for="signup-id">Register Number <span class="required">*</span></label>
+              <div class="login-input-group">
+                <i class="fas fa-hashtag" aria-hidden="true"></i>
+                <input type="text" id="signup-id" placeholder="e.g. 2026AI001" autocomplete="off">
+              </div>
+              <div class="form-error" id="err-id">Please enter your Register Number.</div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group field-group">
+              <label for="signup-dept">Department <span class="required">*</span></label>
+              <div class="login-input-group">
+                <i class="fas fa-building-columns" aria-hidden="true"></i>
+                <select id="signup-dept" aria-label="Department"></select>
+              </div>
+              <div class="form-error" id="err-dept">Please select a department.</div>
+            </div>
+
+            <div class="form-group field-group student-only">
+              <label for="signup-year">Year <span class="required">*</span></label>
+              <div class="login-input-group">
+                <i class="fas fa-graduation-cap" aria-hidden="true"></i>
+                <select id="signup-year" aria-label="Year of study">
+                  <option value="I">I</option>
+                  <option value="II">II</option>
+                  <option value="III">III</option>
+                  <option value="IV">IV</option>
+                </select>
+              </div>
+              <div class="form-error" id="err-year">Please select your year.</div>
+            </div>
+
+            <div class="form-group field-group student-only">
+              <label for="signup-sem">Semester <span class="required">*</span></label>
+              <div class="login-input-group">
+                <i class="fas fa-list-ol" aria-hidden="true"></i>
+                <select id="signup-sem" aria-label="Semester">
+                  <option value="1">Sem 1</option>
+                  <option value="2">Sem 2</option>
+                  <option value="3">Sem 3</option>
+                  <option value="4">Sem 4</option>
+                  <option value="5">Sem 5</option>
+                  <option value="6">Sem 6</option>
+                  <option value="7">Sem 7</option>
+                  <option value="8">Sem 8</option>
+                </select>
+              </div>
+              <div class="form-error" id="err-sem">Please select your semester.</div>
+            </div>
+
+            <div class="form-group field-group student-only">
+              <label for="signup-section">Section <span class="required">*</span></label>
+              <div class="login-input-group">
+                <i class="fas fa-layer-group" aria-hidden="true"></i>
+                <select id="signup-section" aria-label="Section">
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="UV">UV</option>
+                </select>
+              </div>
+              <div class="form-error" id="err-section">Please select your section.</div>
+            </div>
+
+            <div class="form-group field-group staff-only">
+              <label for="signup-designation">Designation</label>
+              <div class="login-input-group">
+                <i class="fas fa-briefcase" aria-hidden="true"></i>
+                <input type="text" id="signup-designation" placeholder="e.g. Assistant Professor" autocomplete="off">
+              </div>
+              <div class="form-error" id="err-designation"></div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group field-group">
+              <label for="signup-email">Email</label>
+              <div class="login-input-group">
+                <i class="fas fa-envelope" aria-hidden="true"></i>
+                <input type="email" id="signup-email" placeholder="name@example.com" autocomplete="email">
+              </div>
+              <div class="form-error" id="err-email">Please enter a valid email address.</div>
+            </div>
+
+            <div class="form-group field-group">
+              <label for="signup-phone">Mobile Number</label>
+              <div class="login-input-group">
+                <i class="fas fa-phone" aria-hidden="true"></i>
+                <input type="tel" id="signup-phone" placeholder="98765 43210" autocomplete="tel" inputmode="tel" maxlength="10">
+              </div>
+              <div class="form-error" id="err-phone">Please enter a valid 10-digit mobile number.</div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group field-group">
+              <label for="signup-pw">Password <span class="required">*</span></label>
+              <div class="login-input-group">
+                <i class="fas fa-lock" aria-hidden="true"></i>
+                <input type="password" id="signup-pw" placeholder="Minimum 6 characters" autocomplete="new-password">
+                <button type="button" class="password-toggle" id="toggle-pw" aria-label="Show or hide password">
+                  <i class="fas fa-eye" id="toggle-pw-icon" aria-hidden="true"></i>
+                </button>
+              </div>
+              <div class="form-error" id="err-pw">Password must be at least 6 characters.</div>
+            </div>
+
+            <div class="form-group field-group">
+              <label for="signup-pw2">Confirm Password <span class="required">*</span></label>
+              <div class="login-input-group">
+                <i class="fas fa-lock" aria-hidden="true"></i>
+                <input type="password" id="signup-pw2" placeholder="Re-enter password" autocomplete="new-password">
+              </div>
+              <div class="form-error" id="err-pw2">Passwords do not match.</div>
+            </div>
+          </div>
+
+          <div class="form-group field-group">
+            <label for="signup-captcha">Captcha <span class="required">*</span></label>
+            <div class="captcha-row">
+              <div class="login-input-group">
+                <i class="fas fa-shield-halved" aria-hidden="true"></i>
+                <input type="text" id="signup-captcha" placeholder="Enter answer" aria-label="Captcha answer" inputmode="numeric" autocomplete="off" maxlength="3">
+              </div>
+              <div class="captcha-question" id="signup-captcha-q" aria-live="polite">5 + 10 = ?</div>
+              <button type="button" class="captcha-refresh" id="signup-captcha-refresh" aria-label="Generate new captcha">
+                <i class="fas fa-rotate-right" aria-hidden="true"></i>
+              </button>
+            </div>
+            <div class="form-error" id="err-scaptcha">Incorrect captcha answer.</div>
+          </div>
+
+          <button type="submit" class="login-btn" id="signup-btn">
+            <span>Create Account</span><i class="fas fa-arrow-right" aria-hidden="true"></i>
+          </button>
+
+          <p class="signup-cta">Already have an account? <a href="index.html">Sign in</a></p>
+        </form>
+      </section>
+    </div>
+  </main>
+
+  <footer class="rpsit-footer">
+    <div class="rpsit-container">© 2026 R P Sarathy Institute of Technology · Attendance Management System</div>
+  </footer>
+
+  <script src="js/mock-data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/photo.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      const session = Auth.getSession();
+      if (session) {
+        window.location.href = Auth.getHomeURL(session.role);
+        return;
+      }
+
+      const dbDepts = DB.getDepartments();
+      const deptSelect = document.getElementById('signup-dept');
+      (dbDepts.length ? dbDepts : [{ code: 'AI&DS', name: 'Artificial Intelligence and Data Science' }]).forEach((d) => {
+        const opt = document.createElement('option');
+        opt.value = d.code;
+        opt.textContent = d.code + ' - ' + d.name;
+        deptSelect.appendChild(opt);
+      });
+
+      const menuBtn = document.getElementById('rpsit-menu-btn');
+      const topnav = document.getElementById('rpsit-topnav');
+      const closeMenu = () => {
+        topnav.classList.remove('open');
+        menuBtn.setAttribute('aria-expanded', 'false');
+      };
+      menuBtn.addEventListener('click', () => {
+        const open = !topnav.classList.contains('open');
+        topnav.classList.toggle('open', open);
+        menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      topnav.querySelectorAll('a').forEach((a) => a.addEventListener('click', closeMenu));
+
+      const captchaInput = document.getElementById('signup-captcha');
+      const captchaQuestion = document.getElementById('signup-captcha-q');
+      let captchaAnswer = 0;
+      const newCaptcha = () => {
+        const a = 4 + Math.floor(Math.random() * 4);
+        const b = 4 + Math.floor(Math.random() * 9);
+        captchaAnswer = a + b;
+        captchaQuestion.textContent = a + ' + ' + b + ' = ?';
+        captchaInput.value = '';
+        document.getElementById('err-scaptcha').classList.remove('show');
+      };
+      newCaptcha();
+      document.getElementById('signup-captcha-refresh').addEventListener('click', newCaptcha);
+
+      document.getElementById('toggle-pw').addEventListener('click', () => {
+        const pw = document.getElementById('signup-pw');
+        const isPw = pw.type === 'password';
+        pw.type = isPw ? 'text' : 'password';
+        document.getElementById('toggle-pw-icon').className = isPw ? 'fas fa-eye-slash' : 'fas fa-eye';
+        document.getElementById('toggle-pw').setAttribute('aria-label', isPw ? 'Hide password' : 'Show password');
+      });
+
+      const ID_LABELS = {
+        Student: { label: 'Register Number', placeholder: 'e.g. 2026AI001', msg: 'Please enter your Register Number.' },
+        Staff: { label: 'Staff ID', placeholder: 'e.g. STFAI001', msg: 'Please enter your Staff ID.' },
+        HOD: { label: 'HOD ID', placeholder: 'e.g. HODAI001', msg: 'Please enter your HOD ID.' }
+      };
+
+      const roleInputs = document.querySelectorAll('input[name="srole"]');
+      const idLabel = document.querySelector('label[for="signup-id"]');
+      const idInput = document.getElementById('signup-id');
+      const setRole = () => {
+        const role = (document.querySelector('input[name="srole"]:checked') || {}).value || 'Student';
+        const spec = ID_LABELS[role] || ID_LABELS.Student;
+        const idText = 'for="signup-id"';
+        idLabel.outerHTML = '<label ' + idText + '>' + spec.label + ' <span class="required">*</span></label>';
+        idInput.placeholder = spec.placeholder;
+        document.getElementById('err-id').textContent = spec.msg;
+        document.getElementById('signup-role-label').textContent = 'I am signing up as ' + (role === 'HOD' ? 'a ' : '') + role.toLowerCase();
+        document.querySelectorAll('.student-only').forEach((el) => el.classList.toggle('hidden', role !== 'Student'));
+        document.querySelectorAll('.staff-only').forEach((el) => el.classList.toggle('hidden', role !== 'Staff'));
+        document.getElementById('err-srole').classList.remove('show');
+      };
+      roleInputs.forEach((r) => r.addEventListener('change', setRole));
+      setRole();
+
+      const errorBox = document.getElementById('signup-error');
+      const clearBox = () => errorBox.classList.remove('show');
+
+      const clearError = (el) => {
+        el.classList.remove('invalid');
+        const err = el.closest('.field-group').querySelector('.form-error');
+        if (err && err.id !== 'err-designation') err.classList.remove('show');
+      };
+      ['signup-name', 'signup-id', 'signup-email', 'signup-phone', 'signup-pw', 'signup-pw2', 'signup-captcha'].forEach((id) => {
+        document.getElementById(id).addEventListener('input', (e) => { clearError(e.target); clearBox(); });
+      });
+
+      function invalidate(input, errId) {
+        input.classList.add('invalid');
+        document.getElementById(errId).classList.add('show');
+      }
+
+      const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const PHONE_RE = /^\d{10}$/;
+
+      document.getElementById('signup-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        clearBox();
+        let valid = true;
+
+        const role = (document.querySelector('input[name="srole"]:checked') || {}).value || 'Student';
+        const name = document.getElementById('signup-name').value.trim();
+        const userId = idInput.value.trim();
+        const dept = deptSelect.value;
+        const email = document.getElementById('signup-email').value.trim();
+        const phone = document.getElementById('signup-phone').value.trim();
+        const pw = document.getElementById('signup-pw').value;
+        const pw2 = document.getElementById('signup-pw2').value;
+
+        if (!name) { invalidate(document.getElementById('signup-name'), 'err-name'); valid = false; }
+        if (!userId) { invalidate(idInput, 'err-id'); valid = false; }
+        if (email && !EMAIL_RE.test(email)) { invalidate(document.getElementById('signup-email'), 'err-email'); valid = false; }
+        if (phone && !PHONE_RE.test(phone)) { invalidate(document.getElementById('signup-phone'), 'err-phone'); valid = false; }
+        if (pw.length < 6) { invalidate(document.getElementById('signup-pw'), 'err-pw'); valid = false; }
+        if (pw !== pw2) { invalidate(document.getElementById('signup-pw2'), 'err-pw2'); valid = false; }
+
+        const ans = captchaInput.value.trim();
+        if (!ans || parseInt(ans, 10) !== captchaAnswer) { invalidate(captchaInput, 'err-scaptcha'); valid = false; }
+
+        if (!valid) return;
+
+        const payload = {
+          name,
+          email,
+          phone,
+          password: pw
+        };
+        let result;
+        if (role === 'Student') {
+          payload.registerNumber = userId;
+          payload.department = dept;
+          payload.year = document.getElementById('signup-year').value;
+          payload.semester = document.getElementById('signup-sem').value;
+          payload.section = document.getElementById('signup-section').value;
+          result = DB.addStudent(payload);
+        } else if (role === 'Staff') {
+          payload.staffId = userId;
+          payload.department = dept;
+          payload.designation = document.getElementById('signup-designation').value.trim() || 'Teaching Faculty';
+          result = DB.addStaff(payload);
+        } else {
+          payload.hodId = userId;
+          payload.department = dept;
+          result = DB.createHOD(payload);
+        }
+
+        if (!result.ok) {
+          document.getElementById('signup-error-msg').textContent = result.message;
+          errorBox.classList.add('show');
+          newCaptcha();
+          return;
+        }
+
+        const btn = document.getElementById('signup-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Account created...';
+        Toast.success(result.message);
+        const note = document.createElement('p');
+        note.className = 'signup-cta';
+        note.id = 'signup-success-note';
+        note.textContent = 'Account created! Redirecting to the login page...';
+        document.getElementById('signup-form').appendChild(note);
+        setTimeout(function () { window.location.href = 'index.html'; }, 900);
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeMenu();
+      });
+    })();
+  </script>
+</body>
+</html>

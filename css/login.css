@@ -606,3 +606,60 @@
     flex: 1;
   }
 }
+
+/* ---------- Account create (signup) page ---------- */
+
+.signup-card {
+  max-width: 760px;
+}
+
+.login-input-group select {
+  width: 100%;
+  padding: 12px 38px 12px 42px;
+  border: 1px solid var(--navy-line);
+  border-radius: 10px;
+  font-size: 14px;
+  background: #fff;
+  color: var(--text-dark);
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239aa7c3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.login-input-group select:focus {
+  outline: none;
+  border-color: var(--primary-navy);
+  box-shadow: 0 0 0 3px rgba(20, 39, 83, 0.12);
+}
+
+.login-input-group select.invalid {
+  border-color: var(--danger);
+  background-color: #fef2f2;
+}
+
+.student-only.hidden,
+.staff-only.hidden {
+  display: none !important;
+}
+
+.signup-cta {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--text-muted);
+}
+
+.signup-cta a {
+  color: var(--primary-navy);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.signup-cta a:hover {
+  color: var(--secondary-navy);
+}
