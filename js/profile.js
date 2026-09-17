@@ -228,6 +228,98 @@ const ProfileApp = (() => {
     return sectionCard('fa-chart-pie', 'Attendance Summary', statsInner, 'id="pf-att-summary"');
   };
 
+  /* ─── staff attendance (self view + HOD overview) ──────── */
+
+  const staffAvatarP = (f, size = 28) =>
+    window.ProfilePhoto
+      ? ProfilePhoto.avatarBadge({ userId: f.staffId, name: f.name, role: 'Staff', size })
+      : `<div class="avatar" style="width:${size}px;height:${size}px;font-size:11px">${esc2(Utils.initials(f.name))}</div>`;
+
+  const staffStatusHtml = (status) => {
+    const info = staffStatusInfo(status);
+    return `<span class="badge ${info.cls}"><i class="fas ${info.icon}"></i> ${info.label}</span>`;
+  };
+
+  const staffEmployment = (f) => f.employmentStatus || f.status || 'Active';
+
+  const staffAttendanceSelf = (staff) => {
+    const stats = DB.getStaffAttendanceStats(staff.id);
+    const recs = DB.getStaffAttendance({ staffId: staff.id }).slice()
+      .sort((a, b) => (b.date > a.date ? 1 : b.date < a.date ? -1 : 0));
+    const recent = recs.slice(0, 10);
+    const pct = stats.attendancePct;
+
+    return sectionCard('fa-clipboard-user', 'My Staff Attendance', `
+      <p class="pf-wa-intro">Your attendance is marked by the Head of Department. View your daily records here.</p>
+      <div class="pf-att-stats">
+        ${ringDraw(pct)}
+        <div class="pf-att-stat-grid">
+          ${statMini('fa-chart-pie', pct + '%', 'Attendance', 'i-primary')}
+          ${statMini('fa-calendar-check', stats.workingDays, 'Working Days', 'i-gray')}
+          ${statMini('fa-user-check', stats.present, 'Present', 'i-success')}
+          ${statMini('fa-user-xmark', stats.absent, 'Absent', 'i-danger')}
+          ${statMini('fa-clock', stats.late, 'Late', 'i-warning')}
+          ${statMini('fa-plane', stats.leave, 'Leave', 'i-info')}
+          ${statMini('fa-sun', stats.halfDay, 'Half Day', 'i-warning')}
+        </div>
+      </div>
+      <h4 class="pf-teach-label" style="margin:16px 0 8px"><i class="fas fa-clock-rotate-left"></i> Recent Attendance</h4>
+      <div class="table-responsive">
+        <table class="table">
+          <thead><tr><th>Date</th><th>Day</th><th>Status</th><th>Check In</th><th>Check Out</th><th>Marked By</th></tr></thead>
+          <tbody>
+            ${recent.length ? recent.map((r) => {
+              const day = new Date(r.date + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short' });
+              return `<tr>
+                <td><strong>${esc2(r.date)}</strong></td>
+                <td>${esc2(day)}</td>
+                <td>${staffStatusHtml(r.status)}</td>
+                <td>${esc2(r.checkIn || '—')}</td>
+                <td>${esc2(r.checkOut || '—')}</td>
+                <td>${esc2(r.updatedBy || r.markedBy || '—')}</td>
+              </tr>`;
+            }).join('') : TableRenderer.emptyState(6, 'No staff attendance marked yet')}
+          </tbody>
+        </table>
+      </div>`);
+  };
+
+  const hodStaffAttendanceCard = () => {
+    const today = Utils.todayISO();
+    const ds = DB.getStaffAttendanceDailyStats(today);
+    const staff = DB.getStaff();
+    const todayLabel = new Date(today + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    const list = staff.slice(0, 6).map((f) => {
+      const rec = DB.getStaffAttendanceOn(f.id, today);
+      return `<div class="sa-today-item"><span class="sa-today-name">${staffAvatarP(f, 28)}<span>${esc2(f.name)}</span></span>${staffStatusHtml(rec ? rec.status : 'not_marked')}</div>`;
+    }).join('');
+
+    return `
+      <div class="card pf-section">
+        <div class="card-header">
+          <div class="card-title"><i class="fas fa-clipboard-user"></i>Staff Attendance <span class="badge badge-gray">${esc2(todayLabel)}</span></div>
+          <a class="btn btn-sm btn-primary" href="staff-attendance.html"><i class="fas fa-pen"></i> Mark Attendance</a>
+        </div>
+        <div class="pf-dept-stats">
+          ${statMini('fa-user-tie', ds.totalStaff, 'Total Staff', 'i-info')}
+          ${statMini('fa-user-check', ds.present, 'Present', 'i-success')}
+          ${statMini('fa-user-xmark', ds.absent, 'Absent', 'i-danger')}
+          ${statMini('fa-clock', ds.late, 'Late', 'i-warning')}
+          ${statMini('fa-plane', ds.leave, 'Leave', 'i-info')}
+          ${statMini('fa-sun', ds.halfDay, 'Half Day', 'i-warning')}
+          ${statMini('fa-minus', ds.notMarked, 'Not Marked', 'i-gray')}
+        </div>
+        ${ds.marked === 0 && staff.length ? `
+          <div class="sa-empty-banner" style="margin:0 20px 16px"><i class="fas fa-calendar-xmark"></i> No staff attendance marked yet today. Open <strong>Mark Attendance</strong> to update today's records.</div>`
+        : `
+          <div class="sa-today-list" style="margin:6px 20px 10px">
+            <div class="sa-today-head"><h4>Today's Staff Status</h4></div>
+            ${list}
+          </div>
+          <a class="btn btn-outline btn-sm" href="staff-attendance.html" style="margin:0 0 16px 20px"><i class="fas fa-arrow-right"></i> View Full Staff Attendance</a>`}
+      </div>`;
+  };
+
   /* ─── security card ──────────────────────────────────────── */
 
   const securityCard = (person) => {
@@ -627,6 +719,7 @@ const ProfileApp = (() => {
               ${infoBox('fa-building', 'Department', deptName(staff.department))}
               ${infoBox('fa-user-tie', 'Designation', staff.designation)}
               ${infoBox('fa-graduation-cap', 'Qualification', staff.qualification)}
+              ${infoBox('fa-circle-check', 'Employment Status', staffEmployment(staff))}
               ${infoBox('fa-calendar-plus', 'Joining Date', fmtDate(staff.joiningDate))}
               ${infoBox('fa-clock', 'Experience', staff.experienceYears ? staff.experienceYears + ' years' : 'Not Added')}
               ${infoBox('fa-calendar-days', 'Academic Year', staff.academicYear || 'Not Added')}
@@ -645,6 +738,8 @@ const ProfileApp = (() => {
             ${chipList(staff.classes)}
           </div>
         </div>`)}
+
+      <div id="pf-staff-self">${staffAttendanceSelf(staff)}</div>
 
       ${whatsappCard(staff, 'Staff')}
 
@@ -754,6 +849,8 @@ const ProfileApp = (() => {
           ${statMini('fa-calendar-check', DB.getClasses().length, 'Classes', 'i-gray')}
         </div>`)}
 
+      <div id="pf-staffatt">${hodStaffAttendanceCard()}</div>
+
       ${whatsappCard(hod, 'HOD')}
 
       <div class="pf-layout pf-grid-2">
@@ -812,6 +909,8 @@ const ProfileApp = (() => {
 
   /* ─── init ───────────────────────────────────────────────── */
 
+  let profileRTBound = false;
+
   const init = () => {
     const s = Auth.getSession();
     if (!s) { window.location.href = 'index.html'; return; }
@@ -836,6 +935,20 @@ const ProfileApp = (() => {
     if (role === 'Student') renderStudentProfile(mount, person.id, false);
     else if (role === 'Staff') renderStaffProfile(mount, person);
     else renderHodProfile(mount, person);
+
+    // Live refresh of staff attendance sections (HOD overview / staff self view)
+    if ((role === 'Staff' || role === 'HOD') && window.RealtimeService && typeof RealtimeService.subscribe === 'function' && !profileRTBound) {
+      profileRTBound = true;
+      RealtimeService.subscribe('staffattendance.updated', () => {
+        const selfCard = document.getElementById('pf-staff-self');
+        const hodCard = document.getElementById('pf-staffatt');
+        if (selfCard) {
+          const staff = DB.getStaff().find((f) => f.id === session().personId);
+          if (staff) selfCard.innerHTML = staffAttendanceSelf(staff);
+        }
+        if (hodCard) hodCard.innerHTML = hodStaffAttendanceCard();
+      });
+    }
   };
 
   if (document.readyState === 'loading') {

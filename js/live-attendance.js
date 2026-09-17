@@ -265,13 +265,49 @@ window.LiveAttendance = (() => {
     window.location.href = `hod-live-monitoring.html?monitor=${encodeURIComponent(sessionId)}`;
   };
 
+  const capStatus = (s) => (s === 'late' ? 'Late' : s === 'present' ? 'Present' : 'Absent');
+
+  const openCorrectionsModal = (sessionId) => {
+    const session = service().getSession(sessionId);
+    const corrections = window.DB && DB.getAttendanceCorrections ? DB.getAttendanceCorrections({ sessionId }) : [];
+    const modalTitle = session ? `${esc(session.subjectName)} (${esc(session.subjectCode)})` : 'Session';
+    const rows = corrections.length
+      ? corrections.map((c) => `
+          <tr>
+            <td>${esc(c.registerNumber)}</td>
+            <td><strong>${esc(c.name)}</strong></td>
+            <td>${statusBadge(capStatus(c.originalStatus))}</td>
+            <td>${statusBadge(capStatus(c.newStatus))}</td>
+            <td style="max-width:200px;font-size:12px">${esc(c.reason || '—')}</td>
+            <td>${esc(c.correctedBy || '—')}</td>
+            <td>${fmtTime(c.correctedAt)}</td>
+          </tr>`).join('')
+      : `<tr><td colspan="7" class="dr-empty">No manual corrections for this session.</td></tr>`;
+
+    Modal.open({
+      title: `Manual Corrections — ${modalTitle}`,
+      body: `
+        <div class="privacy-note" style="margin-bottom:12px"><i class="fas fa-pen-to-square"></i> ${corrections.length} manual correction(s) applied by staff after camera attendance.</div>
+        <div class="table-responsive" style="max-height:420px;overflow:auto">
+          <table class="table">
+            <thead><tr><th>Register No</th><th>Student</th><th>From</th><th>To</th><th>Reason</th><th>Corrected By</th><th>At</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `,
+      footer: `<button class="btn btn-outline" onclick="Modal.close()"><i class="fas fa-xmark"></i> Close</button>`
+    });
+  };
+
   const matchesSearch = (s) => {
     const q = listSearch.trim().toLowerCase();
     if (!q) return true;
     return (s.subjectName + ' ' + s.subjectCode + ' ' + s.classLabel + ' ' + (s.staffName || '') + ' ' + s.cameraName + ' ' + s.section).toLowerCase().includes(q);
   };
 
-  const recentRow = (s) => `
+  const recentRow = (s) => {
+    const corrCount = window.DB && DB.getAttendanceCorrections ? DB.getAttendanceCorrections({ sessionId: s.sessionId }).length : 0;
+    return `
     <tr>
       <td><strong>${esc(s.classLabel)} AI &amp; DS</strong> <span style="color:var(--gray-500);font-size:12px">Sec ${esc(s.section || '—')}</span></td>
       <td>${esc(s.subjectName)} <span style="color:var(--gray-500);font-size:12px">(${esc(s.subjectCode)})</span></td>
@@ -283,11 +319,15 @@ window.LiveAttendance = (() => {
         <strong style="color:var(--danger)">${s.absentCount || 0}</strong> A
         <span style="font-size:12px;color:var(--gray-500)">(${s.attendancePercentage || 0}%)</span>
       </td>
+      <td>${corrCount > 0
+        ? `<span class="live-corr-chip">${corrCount} corrected</span> <button type="button" class="btn btn-sm btn-outline" onclick="window.LiveAttendance.openCorrectionsModal('${esc(s.sessionId)}')"><i class="fas fa-pen"></i> View</button>`
+        : '<span style="font-size:12px;color:var(--gray-500)">—</span>'}</td>
       <td>${pill(s.status)}</td>
       <td class="actions">
         <button type="button" class="btn btn-sm btn-outline" onclick="window.LiveAttendance.openMonitor('${esc(s.sessionId)}')"><i class="fas fa-eye"></i> View</button>
       </td>
     </tr>`;
+  };
 
   const applyListFilter = () => {
     const all = DB.getRecentSessions(100);
@@ -350,7 +390,7 @@ window.LiveAttendance = (() => {
         <div class="table-responsive">
           <table class="table">
             <thead>
-              <tr><th>Class</th><th>Subject</th><th>Staff</th><th>Hour</th><th>Started</th><th>Attendance</th><th>Status</th><th></th></tr>
+              <tr><th>Class</th><th>Subject</th><th>Staff</th><th>Hour</th><th>Started</th><th>Attendance</th><th>Corrections</th><th>Status</th><th></th></tr>
             </thead>
             <tbody id="live-recent-tbody">
               ${DB.getRecentSessions(100).filter((s) => s.status === 'COMPLETED').length === 0
@@ -782,6 +822,7 @@ window.LiveAttendance = (() => {
       svc.subscribe('attendance.updated', (p) => handleEvent('attendance.updated', p));
       svc.subscribe('camera.status', (p) => handleEvent('camera.status', p));
       svc.subscribe('session.notification', (p) => handleEvent('session.notification', p));
+      svc.subscribe('corrections.updated', (p) => handleEvent('corrections.updated', p));
     }
 
     wireStaffPanel();
@@ -804,6 +845,7 @@ window.LiveAttendance = (() => {
   return {
     openStartSessionModal,
     openMonitor,
+    openCorrectionsModal,
     renderHodProfileIndicator: refreshProfileIndicator,
     renderDashboardSection
   };

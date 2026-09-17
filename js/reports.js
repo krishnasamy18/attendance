@@ -29,7 +29,8 @@ const ReportsApp = (() => {
       { value: 'class', label: 'Class-wise', icon: 'fa-school' },
       { value: 'subject', label: 'Subject-wise', icon: 'fa-book-open' },
       { value: 'staff', label: 'Staff-wise', icon: 'fa-user-tie' },
-      { value: 'department', label: 'Department-wise', icon: 'fa-building-columns' }
+      { value: 'department', label: 'Department-wise', icon: 'fa-building-columns' },
+      { value: 'staffattendance', label: 'Staff Attendance', icon: 'fa-clipboard-user' }
     ];
 
     mount.innerHTML = `
@@ -75,6 +76,20 @@ const ReportsApp = (() => {
           <select class="form-control" id="rp-staff">
             <option value="">All Staff</option>
             ${DB.getStaff().map((f) => `<option value="${esc(f.id)}">${esc(f.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" id="rp-dept-wrap" style="display:none">
+          <label for="rp-dept">Department</label>
+          <select class="form-control" id="rp-dept">
+            <option value="">All Departments</option>
+            ${[...new Set(DB.getStaff().map((f) => f.department))].filter(Boolean).map((d) => `<option value="${esc(d)}">${esc(d)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" id="rp-desig-wrap" style="display:none">
+          <label for="rp-desig">Designation</label>
+          <select class="form-control" id="rp-desig">
+            <option value="">All Designations</option>
+            ${[...new Set(DB.getStaff().map((f) => f.designation))].filter(Boolean).map((d) => `<option value="${esc(d)}">${esc(d)}</option>`).join('')}
           </select>
         </div>` : ''}
         <button class="btn btn-primary" id="rp-generate"><i class="fas fa-file-contract"></i> Generate Report</button>
@@ -128,6 +143,17 @@ const ReportsApp = (() => {
     document.getElementById('rp-csv').addEventListener('click', exportCsv);
     document.getElementById('rp-excel').addEventListener('click', exportExcel);
 
+    // Staff Attendance filters (department / designation) only visible for that report type
+    const toggleStaffAttFilters = () => {
+      const show = document.getElementById('rp-type').value === 'staffattendance';
+      const deptWrap = document.getElementById('rp-dept-wrap');
+      const desigWrap = document.getElementById('rp-desig-wrap');
+      if (deptWrap) deptWrap.style.display = show ? 'block' : 'none';
+      if (desigWrap) desigWrap.style.display = show ? 'block' : 'none';
+    };
+    document.getElementById('rp-type').addEventListener('change', toggleStaffAttFilters);
+    toggleStaffAttFilters();
+
     let currentReport = null;
 
     function getData() {
@@ -148,6 +174,12 @@ const ReportsApp = (() => {
 
     function generate() {
       const type = document.getElementById('rp-type').value;
+
+      if (type === 'staffattendance') {
+        generateStaffAttendance();
+        return;
+      }
+
       const recs = getData();
       let columns, rows;
 
@@ -305,6 +337,81 @@ const ReportsApp = (() => {
       `;
 
       renderCharts(type);
+    }
+
+    function generateStaffAttendance() {
+      const from = document.getElementById('rp-from').value;
+      const to = document.getElementById('rp-to').value || Utils.todayISO();
+      const dept = document.getElementById('rp-dept') ? document.getElementById('rp-dept').value : '';
+      const desig = document.getElementById('rp-desig') ? document.getElementById('rp-desig').value : '';
+      const staffId = isHOD ? document.getElementById('rp-staff').value : s.person.id;
+
+      const columns = ['Staff', 'Staff ID', 'Department', 'Designation', 'Working Days', 'Present', 'Absent', 'Late', 'Leave', 'Half Day', 'Attendance %'];
+      const list = DB.getStaffAttendanceReport({
+        staffId: staffId || undefined,
+        department: dept || undefined,
+        designation: desig || undefined,
+        from: from || undefined,
+        to: to || undefined
+      });
+
+      const rows = list.map((m) => ({
+        label: m.name,
+        cells: [m.name, m.staffCode, m.department, m.designation || '—', m.workingDays, m.present, m.absent, m.late, m.leave, m.halfDay, `${m.attendancePct}%`],
+        pct: m.attendancePct
+      })).sort((a, b) => a.pct - b.pct);
+
+      currentReport = { type: 'staffattendance', columns, rows, recs: list };
+
+      // No charts for this entity report — hide the charts row
+      const wrap = document.getElementById('rp-charts-wrap');
+      wrap.style.display = 'none';
+      wrap.innerHTML = '';
+
+      if (rows.length === 0) {
+        document.getElementById('rp-toolbar').style.display = 'none';
+        document.getElementById('rp-table-card').style.display = 'none';
+        document.getElementById('rp-empty-title').textContent = 'No Report Data';
+        document.getElementById('rp-empty-msg').textContent = 'No staff attendance records match the selected filters.';
+        document.getElementById('rp-empty').style.display = 'block';
+        Toast.info('No Report Data');
+        return;
+      }
+
+      document.getElementById('rp-title').textContent = 'Staff Attendance Report';
+      document.getElementById('rp-toolbar').style.display = 'block';
+      document.getElementById('rp-table-card').style.display = 'block';
+      document.getElementById('rp-empty').style.display = 'none';
+
+      const total = rows.length;
+      const working = rows.reduce((n, r) => n + r.cells[4], 0);
+      const low = rows.filter((r) => r.pct < 80).length;
+      const avg = total ? Math.round(rows.reduce((n, r) => n + r.pct, 0) / total) : 0;
+
+      document.getElementById('rp-summary').innerHTML = `
+        <div class="stat-card"><div class="stat-icon i-info"><i class="fas fa-user-tie"></i></div>
+          <div class="stat-info"><h3>${total}</h3><p>Staff</p></div></div>
+        <div class="stat-card"><div class="stat-icon i-gray"><i class="fas fa-layer-group"></i></div>
+          <div class="stat-info"><h3>${working}</h3><p>Working Days</p></div></div>
+        <div class="stat-card"><div class="stat-icon i-primary"><i class="fas fa-percent"></i></div>
+          <div class="stat-info"><h3>${avg}%</h3><p>Avg Attendance</p></div></div>
+        <div class="stat-card"><div class="stat-icon ${low ? 'i-danger' : 'i-success'}"><i class="fas ${low ? 'fa-triangle-exclamation' : 'fa-circle-check'}"></i></div>
+          <div class="stat-info"><h3>${low}</h3><p>Below 80%</p></div></div>
+      `;
+
+      const tbody = rows.map((r) => `
+        <tr>
+          <td><strong>${esc(r.label)}</strong></td>
+          ${r.cells.slice(1, -1).map((c) => `<td>${esc(String(c))}</td>`).join('')}
+          <td>
+            <span class="attendance-pct" style="color:${Utils.pctColor(r.pct)}">${r.cells[r.cells.length - 1]}</span>
+            ${r.pct < 80 ? '<span class="badge badge-danger" style="margin-left:6px">Low</span>' : ''}
+          </td>
+        </tr>`).join('');
+      document.getElementById('rp-table').innerHTML = `
+        <thead><tr>${columns.map((c) => `<th>${esc(c)}</th>`).join('')}</tr></thead>
+        <tbody>${tbody}</tbody>
+      `;
     }
 
     function renderCharts(type) {

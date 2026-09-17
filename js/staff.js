@@ -100,6 +100,11 @@ const StaffApp = (() => {
       </div>
     `;
 
+    // Low attendance section (rendered by the shared service, 80% rule)
+    if (window.LowAttendanceService && document.getElementById('staff-lowatt-section')) {
+      LowAttendanceService.renderStaffSection('staff-lowatt-section', person.id, { limit: 8 });
+    }
+
     // Today's classes table
     const tbody = document.querySelector('#today-classes-tbody');
     if (todayClasses.length === 0) {

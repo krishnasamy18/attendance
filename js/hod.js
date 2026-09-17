@@ -42,16 +42,10 @@ const HodApp = (() => {
     document.getElementById('hod-subtitle').textContent =
       `${person.hodId} · Head of Department - ${person.department}`;
 
-    // Report threshold config (75%)
-    const THRESHOLD = 75;
+    // Attendance threshold (fixed business rule: strictly below 80%)
+    const THRESHOLD = 80;
 
     // Stat cards
-    const belowThreshold = students.filter((st) => {
-      const recs = allAtt.filter((r) => r.studentId === st.id);
-      const pct = Utils.percentage(recs.filter((r) => r.status !== 'absent').length, recs.length);
-      return pct < THRESHOLD;
-    }).length;
-
     document.getElementById('stat-grid').innerHTML = `
       <div class="stat-card">
         <div class="stat-icon i-primary"><i class="fas fa-user-graduate"></i></div>
@@ -133,19 +127,62 @@ const HodApp = (() => {
       </tr>
     `).join('') : TableRenderer.emptyState(6, 'No Classes Added');
 
-    // Alerts
-    const alerts = [];
-    if (belowThreshold > 0) {
-      alerts.push(`<div class="alert-item"><i class="fas fa-user-graduate"></i><span><strong>${belowThreshold} students</strong> have attendance below ${THRESHOLD}%.</span></div>`);
+    // Low attendance section (rendered by the shared service, 80% rule)
+    if (window.LowAttendanceService && document.getElementById('hod-lowatt-section')) {
+      LowAttendanceService.renderHodSection('hod-lowatt-section', { limit: 8 });
     }
-    const lowClasses = clsRows.filter((c) => c.threshold);
-    lowClasses.forEach((c) => {
-      alerts.push(`<div class="alert-item danger-alert"><i class="fas fa-school"></i><span><strong>${esc(c.label)}</strong> attendance dropped below the department threshold (${c.pct}%).</span></div>`);
-    });
-    if (alerts.length === 0) {
-      alerts.push(`<div class="alert-item" style="background:var(--secondary-light);border-color:rgba(16,185,129,0.3);color:#065f46"><i class="fas fa-circle-check"></i><span>All student attendance meets the department threshold.</span></div>`);
+
+    renderStaffAttendanceSummary();
+
+    // Live refresh of the staff attendance card
+    if (!staffDashRTBound && window.RealtimeService && typeof RealtimeService.subscribe === 'function') {
+      staffDashRTBound = true;
+      RealtimeService.subscribe('staffattendance.updated', () => {
+        if (isOnPage('hod-dashboard.html')) renderStaffAttendanceSummary();
+      });
     }
-    document.getElementById('alert-list').innerHTML = alerts.join('');
+  };
+
+  let staffDashRTBound = false;
+
+  const renderStaffAttendanceSummary = () => {
+    const section = document.getElementById('hod-staffatt-section');
+    if (!section) return;
+    const today = Utils.todayISO();
+    const ds = DB.getStaffAttendanceDailyStats(today);
+    const staffTotal = DB.getStaff().length;
+
+    const stat = (cls, icon, value, label) => `
+      <div class="stat-card">
+        <div class="stat-icon ${cls}"><i class="fas ${icon}"></i></div>
+        <div class="stat-info"><h3>${value}</h3><p>${label}</p></div>
+      </div>`;
+
+    const dateLabel = new Date(today + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+    section.innerHTML = `
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fas fa-clipboard-user"></i>Staff Attendance
+            <span class="badge badge-gray">${esc(dateLabel)}</span>
+          </div>
+          <a class="btn btn-sm btn-outline" href="staff-attendance.html"><i class="fas fa-pen"></i> Mark Attendance</a>
+        </div>
+        <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin:0;border-radius:0;background:transparent;box-shadow:none">
+          ${stat('i-info', 'fa-user-tie', ds.totalStaff, 'Total Staff')}
+          ${stat('i-success', 'fa-user-check', ds.present, 'Present')}
+          ${stat('i-danger', 'fa-user-xmark', ds.absent, 'Absent')}
+          ${stat('i-warning', 'fa-clock', ds.late, 'Late')}
+          ${stat('i-info', 'fa-plane', ds.leave, 'Leave')}
+          ${stat('i-warning', 'fa-sun', ds.halfDay, 'Half Day')}
+          ${stat('i-gray', 'fa-minus', ds.notMarked, 'Not Marked')}
+        </div>
+        ${ds.marked === 0 && staffTotal > 0 ? `
+          <div class="sa-empty-banner" style="margin:12px 20px 16px">
+            <i class="fas fa-calendar-xmark"></i> No staff attendance marked yet today.
+            <a href="staff-attendance.html" style="font-weight:700;color:var(--primary)">Open Staff Attendance</a> to mark today's records.
+          </div>` : ''}
+      </div>`;
   };
 
   /* ---------- Student Management (HOD) ---------- */
@@ -449,42 +486,218 @@ const HodApp = (() => {
 
   /* ---------- Staff Management (HOD) ---------- */
 
+  let staffRTBound = false;
+
+  const staffAvatar = (f, size = 34) =>
+    window.ProfilePhoto ? ProfilePhoto.avatarBadge({ userId: f.staffId, name: f.name, role: 'Staff', size }) : `<div class="avatar" style="width:${size}px;height:${size}px;font-size:12px">${esc(Utils.initials(f.name))}</div>`;
+
+  const employmentBadge = (status) => {
+    const s = status || 'Active';
+    const cls = s === 'Active' ? 'badge-success' : s === 'On Leave' ? 'badge-warning' : 'badge-gray';
+    return `<span class="badge ${cls}">${esc(s)}</span>`;
+  };
+
+  const staffInfoBox = (label, value) => `<div class="info-box"><label>${esc(label)}</label><p>${value}</p></div>`;
+
+  const staffMiniStat = (cls, icon, value, label) => `
+    <div class="stat-card" style="margin:0">
+      <div class="stat-icon ${cls}"><i class="fas ${icon}"></i></div>
+      <div class="stat-info"><h3>${value}</h3><p>${label}</p></div>
+    </div>`;
+
+  const staffStatusCell = (status) => {
+    const info = staffStatusInfo(status);
+    return `<span class="badge ${info.cls}"><i class="fas ${info.icon}"></i> ${esc(info.label)}</span>`;
+  };
+
+  /* Staff profile history tab (shared by viewStaff) */
+  const renderStaffHistory = (ov, staffId, staffName) => {
+    const hState = { from: '', to: '', status: '' };
+
+    const draw = () => {
+      const list = DB.getStaffAttendance({
+        staffId,
+        from: hState.from || undefined,
+        to: hState.to || undefined,
+        status: hState.status || undefined
+      }).slice().reverse();
+
+      const summaryEl = ov.querySelector('#sp-h-summary');
+      const body = ov.querySelector('#sp-h-body');
+
+      const months = {};
+      list.forEach((r) => {
+        const key = r.date.slice(0, 7);
+        const m = months[key] = months[key] || { working: 0, present: 0, absent: 0, late: 0, leave: 0, halfDay: 0 };
+        if (r.status === 'not_marked') return;
+        m.working += 1;
+        if (m[r.status] !== undefined) m[r.status] += 1;
+      });
+
+      summaryEl.innerHTML = Object.keys(months).sort().reverse().map((key) => {
+        const m = months[key];
+        const attended = m.present + m.late;
+        const pct = m.working ? Math.round((attended / m.working) * 100) : 0;
+        const label = new Date(key + '-01T00:00:00').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+        return `
+          <span class="sa-month"><i class="fas fa-calendar"></i>${esc(label)}
+            <span class="muted">— ${m.working} working days · Present ${m.present} · Absent ${m.absent} · Late ${m.late} · Leave ${m.leave} · Half Day ${m.halfDay} · ${pct}%</span>
+          </span>`;
+      }).join('') || '<span class="text-muted" style="font-size:13px">No records in the selected range.</span>';
+
+      if (!list.length) {
+        body.innerHTML = `<div class="lowatt-empty"><i class="fas fa-inbox"></i><p>No staff attendance marked for ${esc(staffName)} in this range.</p></div>`;
+        return;
+      }
+
+      body.innerHTML = `
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr><th>Date</th><th>Day</th><th>Status</th><th>Check In</th><th>Check Out</th><th>Remarks</th><th>Marked By</th><th>Last Updated</th></tr>
+            </thead>
+            <tbody>
+              ${list.map((r) => {
+                const day = new Date(r.date + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short' });
+                const updated = r.updatedAt ? new Date(r.updatedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+                return `
+                  <tr>
+                    <td><strong>${esc(r.date)}</strong></td>
+                    <td>${esc(day)}</td>
+                    <td>${staffStatusCell(r.status)}</td>
+                    <td>${esc(r.checkIn || '—')}</td>
+                    <td>${esc(r.checkOut || '—')}</td>
+                    <td>${esc(r.remarks || '—')}</td>
+                    <td>${esc(r.updatedBy || r.markedBy || '—')}</td>
+                    <td>${esc(updated)}</td>
+                  </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>`;
+    };
+
+    ov.querySelector('#sp-h-from').addEventListener('change', (e) => { hState.from = e.target.value; draw(); });
+    ov.querySelector('#sp-h-to').addEventListener('change', (e) => { hState.to = e.target.value; draw(); });
+    ov.querySelector('#sp-h-status').addEventListener('change', (e) => { hState.status = e.target.value; draw(); });
+
+    draw();
+  };
+
   const renderStaffManagement = () => {
     if (!Auth.protectPage('staff.management', 'Staff')) return;
     AppLayout.init('staff.html');
 
-    const staff = DB.getStaff();
-    const mount = document.getElementById('staff-tbody');
-    if (!mount) return;
+    const tbody = document.getElementById('staff-tbody');
+    const subtitle = document.getElementById('staff-subtitle');
+    if (!tbody) return;
 
-    document.getElementById('staff-subtitle').textContent = `${staff.length} faculty members · Department of AI & DS`;
+    const staffAll = DB.getStaff();
+    const PER_PAGE = 10;
+    let filtered = [...staffAll];
+    let page = 1;
 
-    mount.innerHTML = staff.length ? staff.map((f) => `
-      <tr>
-        <td><strong>${esc(f.staffId)}</strong></td>
-        <td>
-          <div class="flex items-center gap-10">
-            ${window.ProfilePhoto ? ProfilePhoto.avatarBadge({ userId: f.staffId, name: f.name, role: 'Staff' }) : `<div class="avatar" style="width:34px;height:34px;font-size:12px">${esc(Utils.initials(f.name))}</div>`}
-            <span><strong>${esc(f.name)}</strong></span>
-          </div>
-        </td>
-        <td>${esc(f.department)}</td>
-        <td>${esc(f.designation)}</td>
-        <td>
-          ${(f.subjects || []).map((s) => `<span class="badge badge-primary mb-10" style="margin:2px">${esc(s)}</span>`).join(' ')}
-        </td>
-        <td>
-          ${(f.classes || []).map((c) => `<span class="badge badge-gray mb-10" style="margin:2px">${esc(classLabel(c))}</span>`).join(' ')}
-        </td>
-        <td><span class="badge badge-success">Active</span></td>
-        <td class="actions">
-          <button class="btn btn-sm btn-outline" onclick="HodApp.viewStaff('${esc(f.id)}')"><i class="fas fa-eye"></i>View</button>
-          <button class="btn btn-sm btn-outline" onclick="HodApp.editStaff('${esc(f.id)}')"><i class="fas fa-pen"></i>Edit</button>
-        </td>
-      </tr>
-    `).join('') : TableRenderer.emptyState(8, 'No Staff Added');
+    subtitle.textContent = `${staffAll.length} faculty members · Department of AI & DS`;
+
+    // Populate filter options
+    const fill = (selId, values, placeholder) => {
+      const el = document.getElementById(selId);
+      el.innerHTML = `<option value="">${esc(placeholder)}</option>` +
+        values.map((v) => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+    };
+    fill('staff-filter-dept', [...new Set(staffAll.map((f) => f.department))].filter(Boolean).sort(), 'All Departments');
+    fill('staff-filter-desig', [...new Set(staffAll.map((f) => f.designation))].filter(Boolean).sort(), 'All Designations');
+
+    const render = () => {
+      const pages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+      const rows = Utils.paginate(filtered, page, PER_PAGE);
+
+      if (rows.length === 0) {
+        tbody.innerHTML = TableRenderer.emptyState(17, staffAll.length ? 'No staff match your filters.' : 'No staff members added yet.');
+      } else {
+        tbody.innerHTML = rows.map((f) => {
+          const stats = DB.getStaffAttendanceStats(f.id);
+          const pct = stats.attendancePct;
+          const todayStatus = (DB.getStaffAttendanceOn(f.id, Utils.todayISO()) || {}).status || 'not_marked';
+          return `
+            <tr>
+              <td>${staffAvatar(f, 38)}</td>
+              <td><strong>${esc(f.staffId)}</strong></td>
+              <td><strong>${esc(f.name)}</strong></td>
+              <td>${esc(f.email || '—')}</td>
+              <td>${esc(f.phone || '—')}</td>
+              <td>${esc(f.department)}</td>
+              <td>${esc(f.designation || '—')}</td>
+              <td>${esc(f.qualification || '—')}</td>
+              <td>${f.experienceYears ? esc(`${f.experienceYears} yrs`) : '—'}</td>
+              <td>${(f.subjects || []).map((s) => `<span class="badge badge-primary" style="margin:2px">${esc(s)}</span>`).join(' ') || '—'}</td>
+              <td>${(f.classes || []).map((c) => `<span class="badge badge-gray" style="margin:2px">${esc(classLabel(c))}</span>`).join(' ') || '—'}</td>
+              <td>${esc(f.joiningDate || '—')}</td>
+              <td>${employmentBadge(f.employmentStatus || f.status)}</td>
+              <td style="min-width:130px">
+                <span class="attendance-pct" style="color:${Utils.pctColor(pct)}">${pct}%</span>
+                <span class="text-muted" style="font-size:11px">(${stats.workingDays} working)</span>
+                <div class="progress mt-10" style="height:5px"><div class="progress-bar" style="width:${Math.max(2, pct)}%;background:${Utils.pctColor(pct)}"></div></div>
+              </td>
+              <td>${staffStatusCell(todayStatus)}</td>
+              <td>${stats.lastAttendanceDate ? esc(stats.lastAttendanceDate) : '—'}</td>
+              <td class="actions">
+                <button class="btn btn-sm btn-outline" data-sf-view="${esc(f.id)}"><i class="fas fa-eye"></i>View</button>
+                <button class="btn btn-sm btn-outline" data-sf-edit="${esc(f.id)}"><i class="fas fa-pen"></i>Edit</button>
+              </td>
+            </tr>`;
+        }).join('');
+      }
+
+      const pagEl = document.getElementById('staff-pagination');
+      if (pagEl) {
+        pagEl.innerHTML = TableRenderer.paginationHtml({ page, pages, total: filtered.length, perPage: PER_PAGE });
+        TableRenderer.attachPagination(pagEl, (p) => { page = p; render(); });
+      }
+    };
+
+    const applyFilters = () => {
+      const q = document.getElementById('staff-search').value.trim().toLowerCase();
+      const dept = document.getElementById('staff-filter-dept').value;
+      const desig = document.getElementById('staff-filter-desig').value;
+      const emp = document.getElementById('staff-filter-status').value;
+      filtered = staffAll.filter((f) =>
+        (!q || (f.name + ' ' + f.staffId + ' ' + (f.email || '')).toLowerCase().includes(q)) &&
+        (!dept || f.department === dept) &&
+        (!desig || f.designation === desig) &&
+        (!emp || (f.employmentStatus || f.status || 'Active') === emp)
+      );
+      page = 1;
+      render();
+    };
+
+    document.getElementById('staff-search').addEventListener('input', (e) => {
+      const el = e.target;
+      clearTimeout(el._t);
+      el._t = setTimeout(applyFilters, 150);
+    });
+    document.getElementById('staff-filter-dept').addEventListener('change', applyFilters);
+    document.getElementById('staff-filter-desig').addEventListener('change', applyFilters);
+    document.getElementById('staff-filter-status').addEventListener('change', applyFilters);
+
+    tbody.addEventListener('click', (e) => {
+      const v = e.target.closest('[data-sf-view]');
+      const ed = e.target.closest('[data-sf-edit]');
+      if (v) { viewStaff(v.dataset.sfView); return; }
+      if (ed) { editStaff(ed.dataset.sfEdit); }
+    });
 
     document.getElementById('btn-add-staff').addEventListener('click', () => addStaffModal());
+
+    // Live refresh when staff attendance changes anywhere
+    if (!staffRTBound && window.RealtimeService && typeof RealtimeService.subscribe === 'function') {
+      staffRTBound = true;
+      RealtimeService.subscribe('staffattendance.updated', () => {
+        if (isOnPage('staff.html')) applyFilters();
+      });
+    }
+
+    render();
   };
 
   const addStaffModal = () => {
@@ -493,32 +706,64 @@ const HodApp = (() => {
       body: `
         <form novalidate>
           <p class="text-muted" style="margin-bottom:14px">The default login password will be the <strong>Staff ID</strong>.</p>
-          <div class="form-group">
-            <label>Staff ID <span class="required">*</span></label>
-            <input type="text" class="form-control" id="sf2-id" placeholder="e.g. STAFF004">
-            <div class="form-error" id="err-sf2-id">Staff ID is required.</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Staff ID <span class="required">*</span></label>
+              <input type="text" class="form-control" id="sf2-id" placeholder="e.g. STAFF004">
+            </div>
+            <div class="form-group">
+              <label>Department</label>
+              <input type="text" class="form-control" id="sf2-dept" value="AI&DS">
+            </div>
           </div>
           <div class="form-group">
             <label>Full Name <span class="required">*</span></label>
             <input type="text" class="form-control" id="sf2-name" placeholder="Staff name">
-            <div class="form-error" id="err-sf2-name">Name is required.</div>
           </div>
-          <div class="form-group">
-            <label>Designation <span class="required">*</span></label>
-            <select class="form-control" id="sf2-desig">
-              <option>Assistant Professor</option>
-              <option>Associate Professor</option>
-              <option>Professor</option>
-              <option>HOD</option>
-            </select>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Designation</label>
+              <select class="form-control" id="sf2-desig">
+                <option>Assistant Professor</option>
+                <option>Associate Professor</option>
+                <option>Professor</option>
+                <option>HOD</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Qualification</label>
+              <input type="text" class="form-control" id="sf2-qual" placeholder="e.g. M.Tech, Ph.D">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Experience (Years)</label>
+              <input type="number" class="form-control" id="sf2-exp" min="0" max="50" placeholder="e.g. 5">
+            </div>
+            <div class="form-group">
+              <label>Joining Date</label>
+              <input type="date" class="form-control" id="sf2-join" max="${esc(Utils.todayISO())}">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Employment Status</label>
+              <select class="form-control" id="sf2-emp">
+                <option>Active</option>
+                <option>On Leave</option>
+                <option>Contract</option>
+                <option>Resigned</option>
+                <option>Retired</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Assigned Classes</label>
+              <input type="text" class="form-control" id="sf2-cls" placeholder="Comma separated, e.g. I, II">
+            </div>
           </div>
           <div class="form-group">
             <label>Assigned Subjects</label>
             <input type="text" class="form-control" id="sf2-subs" placeholder="Comma separated, e.g. Artificial Intelligence, Machine Learning">
-          </div>
-          <div class="form-group">
-            <label>Assigned Classes</label>
-            <input type="text" class="form-control" id="sf2-cls" placeholder="Comma separated, e.g. I, II">
           </div>
           <div class="form-row">
             <div class="form-group"><label>Email</label><input type="email" class="form-control" id="sf2-email" placeholder="staff@college.edu"></div>
@@ -543,10 +788,14 @@ const HodApp = (() => {
       const result = DB.addStaff({
         staffId: id,
         name,
-        department: 'AI&DS',
+        department: document.getElementById('sf2-dept').value.trim() || 'AI&DS',
         designation: document.getElementById('sf2-desig').value,
-        subjects: document.getElementById('sf2-subs').value.split(',').map((s) => s.trim()).filter(Boolean),
+        qualification: document.getElementById('sf2-qual').value.trim(),
+        experienceYears: parseInt(document.getElementById('sf2-exp').value, 10) || 0,
+        joiningDate: document.getElementById('sf2-join').value || undefined,
+        employmentStatus: document.getElementById('sf2-emp').value,
         classes: document.getElementById('sf2-cls').value.split(',').map((s) => s.trim()).filter(Boolean),
+        subjects: document.getElementById('sf2-subs').value.split(',').map((s) => s.trim()).filter(Boolean),
         email: document.getElementById('sf2-email').value.trim(),
         phone: document.getElementById('sf2-phone').value.trim()
       });
@@ -565,16 +814,34 @@ const HodApp = (() => {
       title: 'Edit Staff',
       body: `
         <form novalidate>
-          <div class="form-group"><label>Staff ID</label><input type="text" class="form-control" id="sf2-id" value="${esc(f.staffId)}"></div>
+          <div class="form-row">
+            <div class="form-group"><label>Staff ID</label><input type="text" class="form-control" id="sf2-id" value="${esc(f.staffId)}"></div>
+            <div class="form-group"><label>Department</label><input type="text" class="form-control" id="sf2-dept" value="${esc(f.department)}"></div>
+          </div>
           <div class="form-group"><label>Full Name</label><input type="text" class="form-control" id="sf2-name" value="${esc(f.name)}"></div>
-          <div class="form-group">
-            <label>Designation</label>
-            <select class="form-control" id="sf2-desig">
-              ${['Assistant Professor', 'Associate Professor', 'Professor', 'HOD'].map((d) => `<option ${f.designation === d ? 'selected' : ''}>${d}</option>`).join('')}
-            </select>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Designation</label>
+              <select class="form-control" id="sf2-desig">
+                ${['Assistant Professor', 'Associate Professor', 'Professor', 'HOD'].map((d) => `<option ${f.designation === d ? 'selected' : ''}>${d}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group"><label>Qualification</label><input type="text" class="form-control" id="sf2-qual" value="${esc(f.qualification || '')}"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Experience (Years)</label><input type="number" class="form-control" id="sf2-exp" min="0" max="50" value="${esc(f.experienceYears || 0)}"></div>
+            <div class="form-group"><label>Joining Date</label><input type="date" class="form-control" id="sf2-join" max="${esc(Utils.todayISO())}" value="${esc(f.joiningDate || '')}"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Employment Status</label>
+              <select class="form-control" id="sf2-emp">
+                ${['Active', 'On Leave', 'Contract', 'Resigned', 'Retired'].map((s) => `<option ${(f.employmentStatus || f.status || 'Active') === s ? 'selected' : ''}>${s}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group"><label>Assigned Classes</label><input type="text" class="form-control" id="sf2-cls" value="${esc((f.classes || []).join(', '))}"></div>
           </div>
           <div class="form-group"><label>Assigned Subjects</label><input type="text" class="form-control" id="sf2-subs" value="${esc((f.subjects || []).join(', '))}"></div>
-          <div class="form-group"><label>Assigned Classes</label><input type="text" class="form-control" id="sf2-cls" value="${esc((f.classes || []).join(', '))}"></div>
           <div class="form-row">
             <div class="form-group"><label>Email</label><input type="email" class="form-control" id="sf2-email" value="${esc(f.email || '')}"></div>
             <div class="form-group"><label>Phone</label><input type="tel" class="form-control" id="sf2-phone" value="${esc(f.phone || '')}"></div>
@@ -594,9 +861,14 @@ const HodApp = (() => {
       const result = DB.updateStaff(staffId, {
         staffId: document.getElementById('sf2-id').value.trim(),
         name: document.getElementById('sf2-name').value.trim(),
+        department: document.getElementById('sf2-dept').value.trim() || 'AI&DS',
         designation: document.getElementById('sf2-desig').value,
-        subjects: document.getElementById('sf2-subs').value.split(',').map((s) => s.trim()).filter(Boolean),
+        qualification: document.getElementById('sf2-qual').value.trim(),
+        experienceYears: parseInt(document.getElementById('sf2-exp').value, 10) || 0,
+        joiningDate: document.getElementById('sf2-join').value || undefined,
+        employmentStatus: document.getElementById('sf2-emp').value,
         classes: document.getElementById('sf2-cls').value.split(',').map((s) => s.trim()).filter(Boolean),
+        subjects: document.getElementById('sf2-subs').value.split(',').map((s) => s.trim()).filter(Boolean),
         email: document.getElementById('sf2-email').value.trim(),
         phone: document.getElementById('sf2-phone').value.trim()
       });
@@ -609,22 +881,141 @@ const HodApp = (() => {
 
   const viewStaff = (staffId) => {
     const f = DB.getStaff().find((x) => x.id === staffId);
-    if (!f) return;
-    const recs = DB.getAttendanceByStaff(staffId);
-    const stats = overallStats(recs);
+    if (!f) { Toast.error('Staff member not found.'); return; }
+
+    const today = Utils.todayISO();
+    const stats = DB.getStaffAttendanceStats(staffId);
+    const todayRec = DB.getStaffAttendanceOn(staffId, today);
+    const todayStatus = todayRec ? todayRec.status : 'not_marked';
+    const emp = f.employmentStatus || f.status || 'Active';
+    const markLink = `<a class="btn btn-primary btn-sm" href="staff-attendance.html?staff=${esc(f.id)}&date=${esc(today)}"><i class="fas fa-clipboard-user"></i> Mark Attendance</a>`;
+
+    const subjectsChips = (f.subjects || []).map((s) => `<span class="pf-chip">${esc(s)}</span>`).join(' ') || '<span class="text-muted">No subjects assigned.</span>';
+    const classesChips = (f.classes || []).map((c) => `<span class="pf-chip">${esc(classLabel(c))}</span>`).join(' ') || '<span class="text-muted">No classes assigned.</span>';
+
     Modal.open({
-      title: `Staff Profile - ${esc(f.name)}`,
+      title: 'Staff Profile',
       body: `
-        <div class="profile-info-grid">
-          <div class="info-box"><label>Staff ID</label><p>${esc(f.staffId)}</p></div>
-          <div class="info-box"><label>Designation</label><p>${esc(f.designation)}</p></div>
-          <div class="info-box"><label>Email</label><p>${esc(f.email || '—')}</p></div>
-          <div class="info-box"><label>Phone</label><p>${esc(f.phone || '—')}</p></div>
-          <div class="info-box"><label>Classes</label><p>${esc((f.classes || []).join(', '))}</p></div>
-          <div class="info-box"><label>Attendance Marked</label><p>${recs.length} records · ${stats.percentage}% present</p></div>
+        <div class="sp-profile">
+          <div class="sa-modal-head">
+            <div class="sa-big-avatar">${staffAvatar(f, 72)}</div>
+            <div style="flex:1;min-width:200px">
+              <h4>${esc(f.name)}</h4>
+              <p>${esc(f.staffId)} · ${esc(f.department)} · ${esc(f.designation || '—')} · ${esc(emp)}</p>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+              ${staffStatusCell(todayStatus)}
+              ${markLink}
+              <button class="btn btn-outline btn-sm" id="sp-edit"><i class="fas fa-pen"></i> Edit Profile</button>
+            </div>
+          </div>
+
+          <div class="sp-tabs">
+            <button class="sp-tab active" data-sp-tab="overview">Overview</button>
+            <button class="sp-tab" data-sp-tab="history">Attendance History</button>
+          </div>
+
+          <div id="sp-overview">
+            <div class="pf-grid-2">
+              <div class="pf-section" style="display:flex;flex-direction:column;gap:14px">
+                <div class="card-header"><div class="card-title"><i class="fas fa-circle-user"></i>Personal Information</div></div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;padding:0 2px">
+                  ${staffInfoBox('Staff ID', esc(f.staffId))}
+                  ${staffInfoBox('Full Name', esc(f.name))}
+                  ${staffInfoBox('Email', esc(f.email || '—'))}
+                  ${staffInfoBox('Phone', esc(f.phone || '—'))}
+                  ${staffInfoBox('WhatsApp', esc(f.whatsapp || f.phone || '—'))}
+                  ${staffInfoBox('Date of Birth', esc(f.dob || '—'))}
+                  ${staffInfoBox('Gender', esc(f.gender || '—'))}
+                  ${staffInfoBox('Department', esc(f.department))}
+                </div>
+              </div>
+              <div class="pf-section" style="display:flex;flex-direction:column;gap:14px">
+                <div class="card-header"><div class="card-title"><i class="fas fa-briefcase"></i>Professional Information</div></div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;padding:0 2px">
+                  ${staffInfoBox('Designation', esc(f.designation || '—'))}
+                  ${staffInfoBox('Qualification', esc(f.qualification || '—'))}
+                  ${staffInfoBox('Experience', f.experienceYears ? esc(`${f.experienceYears} years`) : '—')}
+                  ${staffInfoBox('Joining Date', esc(f.joiningDate || '—'))}
+                  ${staffInfoBox('Employment Status', employmentBadge(emp))}
+                </div>
+              </div>
+            </div>
+
+            <div class="pf-section" style="display:flex;flex-direction:column;gap:14px;margin-top:16px">
+              <div class="card-header"><div class="card-title"><i class="fas fa-chalkboard-user"></i>Academic Information</div></div>
+              <div>
+                <div class="pf-teach-label" style="width:100%"><i class="fas fa-book"></i>Subjects Handled</div>
+                <div class="pf-chips">${subjectsChips}</div>
+              </div>
+              <div>
+                <div class="pf-teach-label" style="width:100%"><i class="fas fa-school"></i>Classes Assigned</div>
+                <div class="pf-chips">${classesChips}</div>
+              </div>
+            </div>
+
+            <div class="pf-section" style="margin-top:16px">
+              <div class="card-header">
+                <div class="card-title"><i class="fas fa-calendar-check"></i>Attendance Summary</div>
+                ${markLink}
+              </div>
+              <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center;padding:6px 0 14px">
+                <div class="pf-ring-wrap" style="flex-shrink:0">
+                  <div class="ring" style="background:conic-gradient(${Utils.pctColor(stats.attendancePct)} ${Math.round(stats.attendancePct * 3.6)}deg, var(--gray-100) 0deg)">
+                    <span class="ring-value">${stats.attendancePct}%</span>
+                    <span class="ring-label">Attendance</span>
+                  </div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(3,minmax(110px,1fr));gap:12px;flex:1;min-width:280px">
+                  ${staffMiniStat('i-info', 'fa-layer-group', stats.workingDays, 'Working Days')}
+                  ${staffMiniStat('i-success', 'fa-user-check', stats.present, 'Present')}
+                  ${staffMiniStat('i-danger', 'fa-user-xmark', stats.absent, 'Absent')}
+                  ${staffMiniStat('i-warning', 'fa-clock', stats.late, 'Late')}
+                  ${staffMiniStat('i-info', 'fa-plane', stats.leave, 'Leave')}
+                  ${staffMiniStat('i-warning', 'fa-sun', stats.halfDay, 'Half Day')}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="sp-history" style="display:none">
+            <div class="sa-history-filters">
+              <div class="form-group"><label>From</label><input type="date" class="form-control" id="sp-h-from"></div>
+              <div class="form-group"><label>To</label><input type="date" class="form-control" id="sp-h-to"></div>
+              <div class="form-group">
+                <label>Status</label>
+                <select class="form-control" id="sp-h-status">
+                  <option value="">All Statuses</option>
+                  ${STAFF_STATUS_OPTIONS.map((s) => `<option value="${s}">${esc(staffStatusInfo(s).label)}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+            <div id="sp-h-summary" class="sa-summary-row"></div>
+            <div id="sp-h-body"></div>
+          </div>
         </div>
-      `
+      `,
+      footer: `<button class="btn btn-outline" data-cancel>Close</button>`
     });
+
+    const ov = document.querySelector('.modal-overlay.active');
+    ov.querySelector('.modal').classList.add('wide');
+    ov.querySelector('[data-cancel]').addEventListener('click', Modal.close);
+
+    ov.querySelector('#sp-edit').addEventListener('click', () => {
+      Modal.close();
+      editStaff(staffId);
+    });
+
+    const tabs = ov.querySelectorAll('.sp-tab');
+    const showTab = (which) => {
+      tabs.forEach((t) => t.classList.toggle('active', t.dataset.spTab === which));
+      document.getElementById('sp-overview').style.display = which === 'overview' ? '' : 'none';
+      document.getElementById('sp-history').style.display = which === 'history' ? '' : 'none';
+    };
+    tabs.forEach((t) => t.addEventListener('click', () => showTab(t.dataset.spTab)));
+
+    renderStaffHistory(ov, staffId, f.name);
   };
 
   /* ---------- Classes Management (HOD) ---------- */

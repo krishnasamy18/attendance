@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Attendance | Attendance System</title>
+  <title>Staff Attendance | Attendance System</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/dashboard.css">
   <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/staff-attendance.css">
 </head>
 <body class="dashboard-body">
   <aside class="sidebar" id="sidebar"></aside>
@@ -19,7 +20,7 @@
   <header class="top-header">
     <div class="top-header-left">
       <button class="hamburger" id="hamburger" aria-label="Toggle menu"><i class="fas fa-bars"></i></button>
-      <h1 class="header-title" id="header-title">Attendance</h1>
+      <h1 class="header-title" id="header-title">Staff Attendance</h1>
     </div>
     <div class="top-header-right">
       <button class="header-icon-btn" id="notif-btn" aria-label="Notifications">
@@ -59,33 +60,9 @@
 
   <script src="js/mock-data.js"></script>
   <script src="js/auth.js"></script>
-    <script src="js/photo.js"></script>
+  <script src="js/photo.js"></script>
   <script src="js/app.js"></script>
-  <script src="js/attendance.js"></script>
-  <script src="js/student.js"></script>
-  <script src="js/staff.js"></script>
-  <script src="js/hod.js"></script>
   <script src="js/services/realtimeService.js"></script>
-  <script src="js/services/lowAttendanceService.js"></script>
-  <script src="js/services/reminderService.js"></script>
-  <script>
-    // Route attendance.html based on role + query
-    document.addEventListener('DOMContentLoaded', () => {
-      const session = Auth.getSession();
-      if (!session) { window.location.href = 'index.html'; return; }
-
-      const params = new URLSearchParams(window.location.search);
-      const role = session.role;
-
-      if (role === 'Student') {
-        StudentApp.initAttendancePage();
-      } else if (role === 'Staff') {
-        StaffApp.initAttendancePage();
-      } else if (role === 'HOD') {
-        if (params.get('mode') === 'monitor') HodApp.renderMonitor();
-        else StaffApp.initAttendancePage(); // HOD can view history too
-      }
-    });
-  </script>
+  <script src="js/staff-attendance.js"></script>
 </body>
 </html>

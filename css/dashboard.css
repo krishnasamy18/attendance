@@ -353,6 +353,17 @@
   white-space: nowrap;
 }
 
+.notif-item .notif-link {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.notif-item .notif-link:hover {
+  text-decoration: underline;
+}
+
 /* Profile dropdown */
 
 .profile-dropdown {

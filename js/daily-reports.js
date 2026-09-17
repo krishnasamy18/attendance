@@ -439,6 +439,11 @@ window.DailyReportsApp = (() => {
             <input type="number" class="form-control" id="cfg-threshold" min="1" max="100" value="${esc(cfg.threshold || 75)}">
             <span class="pf-field-hint">Students below this percentage are flagged in the HOD report.</span>
           </div>
+          <div class="form-group">
+            <label>Manual Correction Window (minutes)</label>
+            <input type="number" class="form-control" id="cfg-corr-window" min="1" max="1440" value="${esc(cfg.correctionWindowMins || 120)}">
+            <span class="pf-field-hint">How long staff may correct camera attendance after a session ends. Set by backend, editable here for the prototype.</span>
+          </div>
           <div class="dr-settings-note">
             <i class="fas fa-circle-info"></i>
             Automatic generation and timed WhatsApp delivery are executed by the backend scheduler
@@ -455,7 +460,8 @@ window.DailyReportsApp = (() => {
       const res = DB.saveReportSettings({
         dailyReportTime: $('#cfg-time').value,
         autoEnabled: $('#cfg-auto').checked,
-        threshold: Number($('#cfg-threshold').value) || 75
+        threshold: Number($('#cfg-threshold').value) || 75,
+        correctionWindowMins: Number($('#cfg-corr-window').value) || 120
       });
       if (!res.ok) Toast.error(res.message);
       else Toast.success(res.message);

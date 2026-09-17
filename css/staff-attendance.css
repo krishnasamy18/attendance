@@ -1,0 +1,261 @@
+/* ============================================================
+   Staff Attendance & Staff Management (HOD)
+   ------------------------------------------------------------
+   Styles for the HOD Staff Attendance page, the staff management
+   table/profile, the HOD dashboard + profile attendance summary.
+   Follows the existing College ERP design tokens.
+   ============================================================ */
+
+/* ---------- Staff Attendance page ---------- */
+
+.sa-page-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--gray-500);
+}
+
+.sa-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.sa-stat {
+  background: #fff;
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.sa-stat:hover {
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.sa-stat-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+
+.sa-stat-icon.i-success { background: var(--secondary-light); color: var(--secondary-dark); }
+.sa-stat-icon.i-danger  { background: var(--danger-light); color: var(--danger); }
+.sa-stat-icon.i-warning { background: var(--warning-light); color: var(--warning-dark); }
+.sa-stat-icon.i-info    { background: var(--primary-light); color: var(--primary); }
+.sa-stat-icon.i-gray    { background: var(--gray-100); color: var(--gray-500); }
+
+.sa-stat-info h3 { font-size: 20px; font-weight: 800; color: var(--dark); margin: 0; line-height: 1.1; }
+.sa-stat-info p  { font-size: 12px; color: var(--gray-500); margin: 2px 0 0; }
+
+.sa-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  margin-bottom: 16px;
+}
+
+.sa-search { flex: 1 1 220px; }
+.sa-search input { width: 100%; }
+
+.sa-empty-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  border-radius: var(--radius-sm);
+  background: var(--gray-50);
+  border: 1px dashed var(--gray-200);
+  color: var(--gray-600);
+  font-size: 13px;
+}
+
+/* Rich staff management table (Staff page + Attendance page) */
+
+.staff-rich-table { min-width: 1480px; }
+
+.staff-rich-table .attendance-pct { font-weight: 700; white-space: nowrap; }
+
+.staff-rich-table td { vertical-align: middle; }
+
+.sa-status-cell { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.sa-quick-select {
+  width: 128px;
+  height: 30px;
+  font-size: 12px;
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-200);
+  background: #fff;
+  color: var(--dark-2);
+}
+
+.sa-quick-select:focus { outline: none; border-color: var(--primary); }
+
+/* ---------- Mark / Edit attendance modal ---------- */
+
+.sa-modal-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, var(--primary-bg), #f8fafc);
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+}
+
+.sa-modal-head h4 { margin: 0 0 2px; font-size: 16px; font-weight: 800; color: var(--dark); }
+.sa-modal-head p { margin: 0; font-size: 12.5px; color: var(--gray-500); }
+
+.sa-already {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--warning-light);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: var(--warning-dark);
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.sa-time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* ---------- Staff attendance history ---------- */
+
+.sa-history-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.sa-month {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--primary-bg);
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0 8px 12px 0;
+}
+
+.sa-month .muted { color: var(--gray-500); font-weight: 600; }
+
+.sa-summary-row { display: inline-flex; gap: 16px; flex-wrap: wrap; }
+
+/* Dashboard / profile "Staff Attendance Overview / Summary" */
+
+.sa-dash-card .card-body { padding: 4px 20px 20px; }
+
+.sa-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.sa-mini {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+
+.sa-mini h4 { margin: 0 0 2px; font-size: 18px; font-weight: 800; color: var(--dark); }
+.sa-mini p  { margin: 0; font-size: 12px; color: var(--gray-500); }
+
+.sa-today-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 18px 0 10px;
+}
+
+.sa-today-head h4 { margin: 0; font-size: 14px; font-weight: 800; color: var(--dark); }
+
+.sa-today-list { display: flex; flex-direction: column; }
+
+.sa-today-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 2px;
+  border-top: 1px solid var(--gray-50);
+  font-size: 13px;
+}
+
+.sa-today-item .sa-today-name { font-weight: 700; color: var(--dark); }
+.sa-today-item .sa-today-id   { color: var(--gray-400); font-size: 12px; }
+.sa-today-item .sa-today-name { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.sa-today-item .sa-today-name span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- Staff profile modal (HOD view) ---------- */
+
+.sp-profile { display: flex; flex-direction: column; gap: 14px; }
+
+.modal.wide { max-width: 860px; }
+
+.sp-tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--gray-100); margin-bottom: 14px; }
+
+.sp-tab {
+  border: 0;
+  background: transparent;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-500);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.sp-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+.sa-big-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), #60a5fa);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.sa-big-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 768px) {
+  .sa-stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .sa-time-row { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .sa-stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .sa-stat { padding: 10px 12px; }
+  .sa-stat-info h3 { font-size: 17px; }
+}

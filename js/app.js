@@ -229,13 +229,13 @@ const Utils = {
 
   pctColor(pct) {
     if (pct >= 80) return 'var(--secondary)';
-    if (pct >= 75) return 'var(--warning)';
+    if (pct >= 70) return 'var(--warning)';
     return 'var(--danger)';
   },
 
   pctStatus(pct) {
     if (pct >= 80) return { text: 'Good', cls: 'badge-success' };
-    if (pct >= 75) return { text: 'Warning', cls: 'badge-warning' };
+    if (pct >= 70) return { text: 'Warning', cls: 'badge-warning' };
     return { text: 'Critical', cls: 'badge-danger' };
   },
 
@@ -288,6 +288,21 @@ const TableRenderer = {
     </td></tr>`;
   }
 };
+
+/* ---------- Staff attendance status metadata ---------- */
+
+const STAFF_STATUS = {
+  not_marked: { label: 'Not Marked', cls: 'badge-gray', icon: 'fa-minus' },
+  present:    { label: 'Present',    cls: 'badge-success', icon: 'fa-user-check' },
+  absent:     { label: 'Absent',     cls: 'badge-danger',  icon: 'fa-user-xmark' },
+  late:       { label: 'Late',       cls: 'badge-warning', icon: 'fa-clock' },
+  leave:      { label: 'Leave',      cls: 'badge-info',    icon: 'fa-plane' },
+  half_day:   { label: 'Half Day',   cls: 'badge-warning', icon: 'fa-sun' }
+};
+
+const STAFF_STATUS_OPTIONS = ['present', 'absent', 'late', 'leave', 'half_day'];
+
+const staffStatusInfo = (status) => STAFF_STATUS[status] || STAFF_STATUS.not_marked;
 
 /* ---------- Chart.js helpers ---------- */
 
@@ -408,8 +423,10 @@ const NAV_CONFIG = {
     items: [
       { route: 'staff.dashboard', key: 'staff-dashboard.html', icon: 'fa-gauge-high', label: 'Dashboard' },
       { route: 'attendance.mark', key: 'attendance.html?mode=mark', icon: 'fa-pen-to-square', label: 'Mark Attendance' },
+      { route: 'attendance.manual', key: 'staff-manual-attendance.html', icon: 'fa-hands', label: 'Manual Attendance' },
       { route: 'attendance.view', key: 'attendance.html', icon: 'fa-clock-rotate-left', label: 'Attendance History' },
       { route: 'staff.daily-reports', key: 'staff-daily-reports.html', icon: 'fa-file-invoice', label: 'My Daily Reports' },
+      { route: 'low-attendance', key: 'low-attendance.html', icon: 'fa-triangle-exclamation', label: 'Low Attendance' },
       { route: 'students', key: 'students.html', icon: 'fa-users', label: 'Students' },
       { route: 'timetable', key: 'timetable.html', icon: 'fa-calendar-days', label: 'Timetable' },
       { route: 'reports', key: 'reports.html', icon: 'fa-chart-pie', label: 'Reports' },
@@ -423,11 +440,13 @@ const NAV_CONFIG = {
       { route: 'hod.live-monitoring', key: 'hod-live-monitoring.html', icon: 'fa-video', label: 'Live Monitoring', live: true },
       { route: 'students.management', key: 'students.html', icon: 'fa-users', label: 'Students' },
       { route: 'staff.management', key: 'staff.html', icon: 'fa-user-tie', label: 'Staff' },
+      { route: 'staff.attendance', key: 'staff-attendance.html', icon: 'fa-clipboard-user', label: 'Staff Attendance' },
       { route: 'classes', key: 'classes.html?tab=classes', icon: 'fa-school', label: 'Classes' },
       { route: 'subjects', key: 'subjects.html', icon: 'fa-book-open', label: 'Subjects' },
       { route: 'timetable', key: 'timetable.html', icon: 'fa-calendar-days', label: 'Timetable' },
       { route: 'attendance.monitor', key: 'attendance.html?mode=monitor', icon: 'fa-chart-line', label: 'Attendance Monitoring' },
       { route: 'daily.reports', key: 'daily-reports.html', icon: 'fa-file-invoice', label: 'Daily Reports' },
+      { route: 'low-attendance', key: 'low-attendance.html', icon: 'fa-triangle-exclamation', label: 'Low Attendance' },
       { route: 'reports', key: 'reports.html', icon: 'fa-chart-pie', label: 'Reports' },
       { route: 'profile', key: 'profile.html', icon: 'fa-user', label: 'Profile' }
     ]
@@ -557,7 +576,13 @@ const AppLayout = {
     if (notifList) notifList.innerHTML = buildNotifications(session);
     const notifBadge = document.getElementById('notif-badge');
     if (notifBadge) {
-      const count = notifList ? notifList.querySelectorAll('.notif-item').length : 0;
+      // Prefer the low-attendance badge count for HOD / Staff, but never
+      // hide other pending notifications (e.g. pending sessions).
+      const lowCount = (window.LowAttendanceService && LowAttendanceService.badgeCount)
+        ? LowAttendanceService.badgeCount()
+        : 0;
+      const itemCount = notifList ? notifList.querySelectorAll('.notif-item').length : 0;
+      const count = Math.max(lowCount, itemCount);
       notifBadge.textContent = count;
       notifBadge.style.display = count ? '' : 'none';
     }
@@ -701,6 +726,24 @@ function buildNotifications(session) {
 
   const dayAbbr = () => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date().getDay()];
 
+  // Low-attendance notifications for HOD / Staff — shown first because
+  // they are the most actionable. The "View" action links to the
+  // dedicated low-attendance page.
+  if (role === 'HOD' || role === 'Staff') {
+    const lowCount = (window.LowAttendanceService && LowAttendanceService.badgeCount)
+      ? LowAttendanceService.badgeCount()
+      : 0;
+    if (lowCount > 0) {
+      items.push({
+        icon: 'fa-triangle-exclamation text-danger',
+        html: `${lowCount} student(s) have attendance below <strong>80%</strong>. <a href="low-attendance.html" class="notif-link">View <i class="fas fa-arrow-right"></i></a>`,
+        time: now
+      });
+    } else {
+      items.push({ icon: 'fa-circle-check text-success', text: 'No students are currently below the 80% attendance threshold.', time: now });
+    }
+  }
+
   if (role === 'Student') {
     const recs = session.personId ? DB.getStudentAttendance(session.personId) : [];
     if (recs.length === 0) {
@@ -708,8 +751,8 @@ function buildNotifications(session) {
     } else {
       const present = recs.filter((r) => r.status !== 'absent').length;
       const pct = Utils.percentage(present, recs.length);
-      if (pct < 75) {
-        items.push({ icon: 'fa-triangle-exclamation text-danger', text: `Your attendance is ${pct}%. It is below the 75% threshold.`, time: now });
+      if (pct < 80) {
+        items.push({ icon: 'fa-triangle-exclamation text-danger', text: `Your attendance is ${pct}%. It is below the 80% threshold.`, time: now });
       } else {
         items.push({ icon: 'fa-circle-check text-success', text: `Your attendance is ${pct}%. Keep it up!`, time: now });
       }
@@ -738,25 +781,15 @@ function buildNotifications(session) {
       });
     });
     const allAtt = DB.getAttendance();
-    const students = DB.getStudents();
-    const below = students.filter((st) => {
-      const r = allAtt.filter((x) => x.studentId === st.id);
-      if (!r.length) return false;
-      return Utils.percentage(r.filter((x) => x.status !== 'absent').length, r.length) < 75;
-    });
     if (allAtt.length === 0) {
       items.push({ icon: 'fa-bell text-muted', text: 'No attendance records in the department yet.', time: now });
-    } else if (below.length > 0) {
-      items.push({ icon: 'fa-triangle-exclamation text-danger', text: `${below.length} student(s) have attendance below 75%.`, time: now });
-    } else {
-      items.push({ icon: 'fa-circle-check text-success', text: 'All students meet the attendance threshold.', time: now });
     }
   }
 
   return items.map((n) => `
     <div class="notif-item">
       <i class="fas ${n.icon}" style="font-size:15px"></i>
-      <div class="notif-text">${esc(n.text)}</div>
+      <div class="notif-text">${n.html ? n.html : esc(n.text)}</div>
       <div class="notif-time">${esc(n.time)}</div>
     </div>
   `).join('') || `<div class="empty-state" style="padding:20px"><i class="fas fa-bell-slash"></i><h4>No notifications</h4></div>`;
