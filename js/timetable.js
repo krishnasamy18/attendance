@@ -67,14 +67,53 @@ const TimetableApp = (() => {
       </div>
 
       <div class="card">
-        <div class="table-responsive">
-          <table class="table" id="tt-table"></table>
+        <div class="tt-table-wrap">
+          <div class="table-responsive">
+            <table class="table" id="tt-table"></table>
+          </div>
+        </div>
+        <div class="tt-mobile" id="tt-mobile">
+          <div class="tt-day-picker" id="tt-day-picker" role="tablist" aria-label="Select a day"></div>
+          <div class="tt-day-list" id="tt-day-list"></div>
         </div>
       </div>
     `;
 
+    let activeDay = DAYS.includes(new Date().toString().slice(0, 3)) ? new Date().toString().slice(0, 3) : DAYS[0];
+    let effectiveFilter = (t) => (!filterFn || filterFn(t));
+
+    const renderMob = (day) => {
+      const picker = document.getElementById('tt-day-picker');
+      const list = document.getElementById('tt-day-list');
+      if (!picker || !list) return;
+
+      picker.innerHTML = DAYS.map((d) => `
+        <button type="button" class="tt-day-btn ${d === day ? 'is-active' : ''}" data-tt-day="${d}" aria-pressed="${d === day}">${d}</button>
+      `).join('');
+
+      const dayCells = periods
+        .map((time) => ({ time, cell: tt.find((t) => t.day === day && t.time === time && (!effectiveFilter || effectiveFilter(t))) }))
+        .filter((x) => x.cell);
+
+      list.innerHTML = dayCells.length
+        ? `<div class="tt-day-title"><i class="fas fa-calendar-day"></i> ${DAY_FULL[day]}</div>` +
+          dayCells.map(({ time, cell }) => `
+            <div class="tt-day-card">
+              <span class="tt-time">${esc(time)}</span>
+              <div class="tt-info">
+                <div class="tt-subj">${esc(cell.subjectName)}</div>
+                <div class="tt-meta">
+                  <span><i class="fas fa-tag"></i> ${esc(cell.subjectCode || '—')}</span>
+                  <span><i class="fas fa-chalkboard-user"></i> ${esc(cell.staffName || '—')}</span>
+                  <span><i class="fas fa-door-open"></i> ${esc(cell.room || '—')}</span>
+                </div>
+              </div>
+            </div>`).join('')
+        : `<div class="empty-state"><i class="fas fa-calendar-xmark"></i><h4>No classes on ${DAY_FULL[day]}</h4></div>`;
+    };
+
     const render = (classIdOverride) => {
-      let effectiveFilter = filterFn;
+      effectiveFilter = (t) => (!filterFn || filterFn(t));
       if (s.role === 'HOD' && classIdOverride) {
         effectiveFilter = (t) => t.classId === classIdOverride;
       }
@@ -113,15 +152,24 @@ const TimetableApp = (() => {
 
       html += `</tbody>`;
       scrollEl.innerHTML = html;
+      renderMob(activeDay);
     };
 
     if (s.role === 'HOD') {
       document.getElementById('tt-class').addEventListener('change', (e) => {
         const value = e.target.value;
         document.getElementById('tt-scope').textContent = `${classLabel(value)} AI & DS · Department`;
+        activeDay = DAYS.includes(new Date().toString().slice(0, 3)) ? new Date().toString().slice(0, 3) : DAYS[0];
         render(value);
       });
     }
+
+    document.getElementById('tt-day-picker').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-tt-day]');
+      if (!btn) return;
+      activeDay = btn.getAttribute('data-tt-day');
+      renderMob(activeDay);
+    });
 
     render(s.role === 'HOD' ? (classes[0] ? classes[0].id : '') : null);
   };

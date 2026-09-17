@@ -238,7 +238,7 @@ const StaffApp = (() => {
         </div>
 
         <div class="table-responsive">
-          <table class="table" id="mk-table">
+          <table class="table table-cards" id="mk-table">
             <thead>
               <tr>
                 <th>Register No</th>
@@ -535,7 +535,7 @@ const StaffApp = (() => {
           <span class="text-muted" id="h-count"></span>
         </div>
         <div class="table-responsive">
-          <table class="table">
+          <table class="table table-cards">
             <thead>
               <tr>
                 <th style="cursor:pointer" data-sort="date">Date <i class="fas fa-sort" style="font-size:10px;color:var(--gray-300)"></i></th>
@@ -696,7 +696,7 @@ const StaffApp = (() => {
       body: `
         <p class="text-muted mb-16">${esc(subjectName)} · ${classId === 'I' ? 'I' : classId === 'II' ? 'II' : classId === 'III' ? 'III' : 'IV'} Sem AI &amp; DS · Section ${esc(section)}</p>
         <div class="table-responsive" style="max-height:320px;overflow-y:auto">
-          <table class="table">
+          <table class="table table-cards">
             <thead><tr><th>Register No</th><th>Name</th><th>Status</th></tr></thead>
             <tbody>${rows || `<tr><td colspan="3"><div class="empty-state">No records.</div></td></tr>`}</tbody>
           </table>

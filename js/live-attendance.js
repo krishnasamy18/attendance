@@ -289,7 +289,7 @@ window.LiveAttendance = (() => {
       body: `
         <div class="privacy-note" style="margin-bottom:12px"><i class="fas fa-pen-to-square"></i> ${corrections.length} manual correction(s) applied by staff after camera attendance.</div>
         <div class="table-responsive" style="max-height:420px;overflow:auto">
-          <table class="table">
+          <table class="table table-cards">
             <thead><tr><th>Register No</th><th>Student</th><th>From</th><th>To</th><th>Reason</th><th>Corrected By</th><th>At</th></tr></thead>
             <tbody>${rows}</tbody>
           </table>
@@ -388,7 +388,7 @@ window.LiveAttendance = (() => {
           <div class="card-title"><i class="fas fa-clock-rotate-left"></i>Recent Sessions</div>
         </div>
         <div class="table-responsive">
-          <table class="table">
+          <table class="table table-cards">
             <thead>
               <tr><th>Class</th><th>Subject</th><th>Staff</th><th>Hour</th><th>Started</th><th>Attendance</th><th>Corrections</th><th>Status</th><th></th></tr>
             </thead>
@@ -517,7 +517,7 @@ window.LiveAttendance = (() => {
           <input type="text" class="form-control" id="monitor-search" placeholder="Search register no / name..." style="max-width:280px">
         </div>
         <div class="table-responsive">
-          <table class="table">
+          <table class="table table-cards">
             <thead><tr><th>Register No</th><th>Name</th><th>Status</th><th>Source</th><th>Marked At</th></tr></thead>
             <tbody id="monitor-tbody"></tbody>
           </table>
@@ -593,7 +593,7 @@ window.LiveAttendance = (() => {
                 <div class="card-title"><i class="fas fa-users"></i>Student Activity</div>
               </div>
               <div class="table-responsive" style="max-height:320px;overflow:auto">
-                <table class="table">
+                <table class="table table-cards">
                   <thead><tr><th>Register No</th><th>Name</th><th>Status</th><th>Action</th></tr></thead>
                   <tbody>
                     ${(session.students || []).map((st) => `
@@ -611,9 +611,12 @@ window.LiveAttendance = (() => {
               </div>
             </div>
             <div class="staff-live-actions">
+              <button type="button" class="btn ${session.status === 'PAUSED' ? 'btn-primary' : 'btn-outline'}" data-toggle-pause data-pause-action="${session.status === 'PAUSED' ? 'resume' : 'pause'}">
+                <i class="fas ${session.status === 'PAUSED' ? 'fa-play' : 'fa-pause'}"></i> ${session.status === 'PAUSED' ? 'Resume' : 'Pause'}
+              </button>
               <button type="button" class="btn btn-danger" data-end-session><i class="fas fa-stop"></i> End Session</button>
-              <span style="font-size:12px;color:var(--gray-500)">Marked students keep their status; pending become absent.</span>
             </div>
+            <p style="font-size:12px;color:var(--gray-500);margin:8px 0 0">Marked students keep their status; pending become absent when you end the session.</p>
           </div>
         </div>
       </div>
@@ -628,11 +631,23 @@ window.LiveAttendance = (() => {
     mount.addEventListener('click', (e) => {
       const statusBtn = e.target.closest('[data-set-status]');
       const endBtn = e.target.closest('[data-end-session]');
-      if (!statusBtn && !endBtn) return;
+      const pauseBtn = e.target.closest('[data-toggle-pause]');
+      if (!statusBtn && !endBtn && !pauseBtn) return;
 
       const panel = mount.querySelector('[data-staff-session]');
       const sessionId = panel && panel.getAttribute('data-staff-session');
       if (!sessionId) return;
+
+      if (pauseBtn) {
+        const action = pauseBtn.getAttribute('data-pause-action');
+        const next = action === 'pause' ? 'PAUSED' : 'LIVE';
+        const done = service().setSessionStatus(sessionId, next);
+        if (done) Toast.success(next === 'PAUSED' ? 'Session paused. Camera attendance is on hold.' : 'Session resumed.');
+        renderStaffPanel();
+        refreshAll();
+        if (window.StaffApp && StaffApp.renderDashboard) StaffApp.renderDashboard();
+        return;
+      }
 
       if (statusBtn) {
         const studentId = statusBtn.getAttribute('data-student-id');

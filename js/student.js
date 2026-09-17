@@ -190,7 +190,7 @@ const StudentApp = (() => {
           <div class="card-title"><i class="fas fa-book-open"></i>Subject-wise Attendance</div>
         </div>
         <div class="table-responsive">
-          <table class="table" id="att-view-table">
+          <table class="table table-cards" id="att-view-table">
             <thead><tr><th>Subject</th><th>Total Classes</th><th>Present</th><th>Absent</th><th>Percentage</th><th>Status</th></tr></thead>
             <tbody></tbody>
           </table>
@@ -272,7 +272,7 @@ const StudentApp = (() => {
           <span class="text-muted" id="hist-count"></span>
         </div>
         <div class="table-responsive">
-          <table class="table">
+          <table class="table table-cards">
             <thead>
               <tr>
                 <th style="cursor:pointer" data-sort="date">Date <i class="fas fa-sort" style="font-size:10px;color:var(--gray-300)"></i></th>

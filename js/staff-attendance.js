@@ -443,7 +443,7 @@ window.StaffAttendanceApp = (() => {
 
       body.innerHTML = `
         <div class="table-responsive">
-          <table class="table">
+          <table class="table table-cards">
             <thead>
               <tr><th>Date</th><th>Day</th><th>Status</th><th>Check In</th><th>Check Out</th><th>Remarks</th><th>Marked By</th><th>Last Updated</th></tr>
             </thead>

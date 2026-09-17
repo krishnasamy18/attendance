@@ -265,7 +265,7 @@ const ProfileApp = (() => {
       </div>
       <h4 class="pf-teach-label" style="margin:16px 0 8px"><i class="fas fa-clock-rotate-left"></i> Recent Attendance</h4>
       <div class="table-responsive">
-        <table class="table">
+        <table class="table table-cards">
           <thead><tr><th>Date</th><th>Day</th><th>Status</th><th>Check In</th><th>Check Out</th><th>Marked By</th></tr></thead>
           <tbody>
             ${recent.length ? recent.map((r) => {

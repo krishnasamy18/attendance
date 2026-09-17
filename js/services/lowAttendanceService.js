@@ -96,7 +96,7 @@ window.LowAttendanceService = (() => {
 
   const renderTable = (alerts, includeStaff) => `
     <div class="lowatt-table-wrap">
-      <table class="table lowatt-table">
+      <table class="table table-cards lowatt-table">
         <thead>
           <tr>
             <th>Register No</th>

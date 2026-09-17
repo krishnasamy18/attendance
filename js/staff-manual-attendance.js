@@ -170,7 +170,7 @@ window.ManualAttendanceApp = (() => {
         <div class="ma-summary" id="ma-summary"></div>
 
         <div class="table-responsive">
-          <table class="table">
+          <table class="table table-cards">
             <thead>
               <tr>
                 <th style="width:40px"><input type="checkbox" id="ma-check-all" title="Select all visible"></th>
@@ -213,7 +213,7 @@ window.ManualAttendanceApp = (() => {
           <div class="card-title"><i class="fas fa-history"></i>Correction History — <span id="ma-history-context"></span></div>
         </div>
         <div class="table-responsive">
-          <table class="table">
+          <table class="table table-cards">
             <thead>
               <tr><th>Register No</th><th>Student</th><th>From</th><th>To</th><th>Reason</th><th>Corrected By</th><th>At</th></tr>
             </thead>

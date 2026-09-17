@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>HOD Dashboard | Attendance System</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,6 +11,14 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/dashboard.css">
   <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/mobile.css">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="RPSIT Attendance">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
   <link rel="stylesheet" href="css/live-monitoring.css">
   <link rel="stylesheet" href="css/low-attendance.css">
   <link rel="stylesheet" href="css/staff-attendance.css">
@@ -88,7 +96,7 @@
           <div class="card-title"><i class="fas fa-school"></i>Class-wise Attendance</div>
         </div>
         <div class="table-responsive">
-          <table class="table">
+          <table class="table table-cards">
             <thead><tr><th>Class</th><th>Students</th><th>Attendance %</th></tr></thead>
             <tbody id="class-wise-tbody"></tbody>
           </table>
@@ -115,5 +123,6 @@
   <script src="js/live-attendance.js"></script>
   <script src="js/services/lowAttendanceService.js"></script>
   <script src="js/services/reminderService.js"></script>
+<script src="js/mobile.js"></script>
 </body>
 </html>

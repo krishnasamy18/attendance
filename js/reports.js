@@ -111,7 +111,7 @@ const ReportsApp = (() => {
 
       <div class="card" id="rp-table-card" style="display:none">
         <div class="table-responsive">
-          <table class="table" id="rp-table"></table>
+          <table class="table table-cards" id="rp-table"></table>
         </div>
       </div>
 

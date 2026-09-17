@@ -275,7 +275,7 @@ window.LowAttendanceApp = (() => {
 
     body.innerHTML = `
       <div class="table-responsive">
-        <table class="table">
+        <table class="table table-cards">
           <thead>
             <tr><th>Staff ID</th><th>Staff Name</th><th>Department</th><th>Designation</th><th>Working Days</th><th>Present</th><th>Absent</th><th>Attendance %</th><th>Status</th></tr>
           </thead>

@@ -1,0 +1,1120 @@
+/* ============================================================
+   RPSIT Attendance — Mobile-First Responsive Layer
+   ------------------------------------------------------------
+   This stylesheet makes the College ERP responsive from small
+   phones (320px) up to desktops without changing the core design
+   system. It builds on (and never replaces) the existing sheets.
+
+   Breakpoints used:
+   - <=575px : phones (320/360/375/390/414/430)
+   - 576-767 : small tablets / large phones (landscape)
+   - 768-991 : tablets
+   - 992-1199: small laptops / large tablets
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   0. Global overflow safety (no page-level horizontal scrolling)
+   ------------------------------------------------------------ */
+
+html,
+body {
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  width: 100%;
+  max-width: 100%;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+/* Prevent accidental zoom on rapid taps */
+button,
+a,
+select,
+input,
+label,
+.role-option,
+.live-toggle,
+.status-btn,
+.tt-day-btn,
+.ma-filter-chip,
+.dr-tab,
+.la-tab {
+  touch-action: manipulation;
+}
+
+/* ------------------------------------------------------------
+   1. Safe area support
+   ------------------------------------------------------------ */
+
+.top-header {
+  padding-top: max(0px, env(safe-area-inset-top));
+  height: calc(var(--header-height) + env(safe-area-inset-top));
+}
+
+.sidebar {
+  padding-top: env(safe-area-inset-top);
+}
+
+.sidebar-header {
+  min-height: calc(var(--header-height) + env(safe-area-inset-top));
+}
+
+.main-content {
+  padding-top: calc(var(--header-height) + env(safe-area-inset-top) + 20px);
+}
+
+.modal-footer {
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 992px) {
+  .top-header {
+    height: var(--header-height);
+  }
+}
+
+/* ------------------------------------------------------------
+   2. Mobile header — compact "[☰]  RPSIT Attendance   [Profile]"
+   ------------------------------------------------------------ */
+
+.header-brand-mobile {
+  display: none;
+  align-items: center;
+  gap: 7px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--dark);
+  line-height: 1;
+  white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-brand-mobile i {
+  color: var(--primary);
+  font-size: 15px;
+}
+
+@media (max-width: 575px) {
+  .top-header {
+    padding-left: 10px;
+    padding-right: 10px;
+    gap: 8px;
+  }
+
+  .top-header-left {
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .header-title {
+    display: none;
+  }
+
+  .header-brand-mobile {
+    display: inline-flex;
+    flex: 1;
+  }
+
+  .hamburger {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+  }
+
+  .top-header-right {
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .header-icon-btn {
+    width: 42px;
+    height: 42px;
+  }
+
+  .header-user {
+    padding: 2px;
+  }
+
+  .header-user .avatar {
+    display: block;
+  }
+}
+
+/* ------------------------------------------------------------
+   3. Off-canvas sidebar drawer (tablets + phones)
+   ------------------------------------------------------------ */
+
+@media (max-width: 992px) {
+  .sidebar {
+    width: min(300px, 88vw);
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: none;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 0 0 40px rgba(15, 23, 42, 0.45);
+  }
+
+  /* Close ("X") button, visible only while the drawer is open */
+  .sidebar-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    margin-left: auto;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: #cbd5e1;
+    font-size: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .sidebar-close:active {
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
+  }
+
+  .sidebar-backdrop {
+    z-index: 880;
+  }
+
+  .nav-item {
+    min-height: 48px;
+    padding: 12px 20px;
+  }
+
+  .nav-section-label {
+    padding-top: 16px;
+  }
+}
+
+@media (min-width: 993px) {
+  .sidebar-close {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------
+   4. Dashboard stat cards
+   ------------------------------------------------------------ */
+
+@media (max-width: 767px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .stat-card {
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .stat-icon {
+    width: 46px;
+    height: 46px;
+    font-size: 19px;
+  }
+
+  .stat-info h3 {
+    font-size: 22px;
+  }
+
+  .stat-info p {
+    font-size: 12px;
+  }
+
+  .sa-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .sa-stat {
+    padding: 12px;
+  }
+
+  .la-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .la-stat {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 409px) {
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card {
+    justify-content: flex-start;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ------------------------------------------------------------
+   5. Responsive tables -> cards on phones
+   ------------------------------------------------------------ */
+
+.table-responsive {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Tablet: constrain wide admin tables inside their wrapper only */
+@media (max-width: 1199px) {
+  .staff-rich-table {
+    min-width: 1120px;
+  }
+}
+
+/* Card conversion for .table-cards (labels injected by js/mobile.js) */
+@media (max-width: 767px) {
+  .table-cards thead {
+    display: none;
+  }
+
+  .table-cards,
+  .table-cards tbody,
+  .table-cards tr,
+  .table-cards td {
+    display: block;
+    width: 100%;
+  }
+
+  .table-cards tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .table-cards tr {
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    padding: 4px 6px;
+    margin: 0;
+  }
+
+  .table-cards tr:hover {
+    background: #fff;
+  }
+
+  .table-cards td {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 12px;
+    border-bottom: 1px dashed var(--gray-100);
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .table-cards td:last-child {
+    border-bottom: none;
+  }
+
+  .table-cards td::before {
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    flex-shrink: 0;
+    padding-top: 3px;
+    max-width: 42%;
+  }
+
+  .table-cards td > .table-cell-value {
+    flex: 1;
+    min-width: 0;
+    text-align: right;
+  }
+
+  /* Rows used for empty states must stay plain */
+  .table-cards td[colspan] {
+    display: block;
+  }
+
+  .table-cards td[colspan]::before {
+    content: none;
+  }
+
+  /* Action cells become a full-width button row */
+  .table-cards td.actions {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    padding-top: 12px;
+  }
+
+  .table-cards td.actions::before {
+    content: none;
+  }
+
+  .table-cards .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .table-cards .actions .btn {
+    flex: 1;
+    min-height: 42px;
+    justify-content: center;
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  /* Inline progress bars still fit */
+  .table-cards td.has-progress {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .table-cards td.has-progress::before {
+    margin-bottom: 6px;
+  }
+
+  .table-cards td .progress {
+    width: 100%;
+  }
+
+  /* Staff attendance quick-set */
+  .table-cards .sa-status-cell {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+
+  .sa-quick-select {
+    width: 100%;
+    height: 44px;
+    font-size: 14px;
+    padding: 0 10px;
+  }
+}
+
+/* ------------------------------------------------------------
+   6. Modals -> bottom sheets on phones
+   ------------------------------------------------------------ */
+
+@media (max-width: 767px) {
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal {
+    max-width: 100%;
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 18px 18px 0 0;
+    transform: translateY(100%);
+  }
+
+  .modal-overlay.active .modal {
+    transform: translateY(0);
+  }
+
+  .modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: #fff;
+    min-height: 52px;
+    padding: 14px 18px;
+    border-radius: 18px 18px 0 0;
+  }
+
+  .modal-body {
+    padding: 18px;
+    max-height: calc(92vh - 120px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .modal-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    background: #fff;
+    padding: 12px 18px;
+    gap: 10px;
+  }
+
+  .modal-footer .btn {
+    flex: 1;
+  }
+
+  .modal-close {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+
+  /* Lock background scroll while a bottom sheet is open */
+  body:has(.modal-overlay.active) {
+    overflow: hidden;
+  }
+
+  /* Staff attendance mark modal */
+  .sa-time-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ------------------------------------------------------------
+   7. Touch targets & forms
+   ------------------------------------------------------------ */
+
+@media (max-width: 767px) {
+  .btn {
+    min-height: 44px;
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  .btn-sm {
+    min-height: 40px;
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  .btn-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .form-control,
+  .form-select,
+  select.form-control,
+  .search-box input,
+  .search input,
+  textarea.form-control {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .filters-bar .btn {
+    min-height: 44px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .filters-bar {
+    padding: 14px;
+  }
+
+  .filters-bar .form-group {
+    min-width: 100%;
+  }
+
+  /* Pressed/active states for touch feedback */
+  .btn:active,
+  .header-icon-btn:active,
+  .hamburger:active,
+  .live-toggle:active,
+  .status-btn:active,
+  .role-option:active,
+  .tt-day-btn:active,
+  .ma-filter-chip:active,
+  .dr-tab:active {
+    transform: scale(0.97);
+  }
+}
+
+/* ------------------------------------------------------------
+   8. Page header stacking
+   ------------------------------------------------------------ */
+
+@media (max-width: 767px) {
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .page-header h1 {
+    font-size: 22px;
+  }
+
+  .page-header .btn,
+  .page-header .btn-group,
+  .page-header > .flex {
+    width: 100%;
+  }
+
+  .page-header .flex.gap-10 {
+    justify-content: space-between;
+  }
+
+  .page-header .flex.gap-10 .btn {
+    flex: 1;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .card-header {
+    gap: 8px;
+  }
+}
+
+/* ------------------------------------------------------------
+   9. Notifications & profile dropdowns -> mobile panels
+   ------------------------------------------------------------ */
+
+@media (max-width: 575px) {
+  .notif-dropdown,
+  .profile-dropdown {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    top: calc(var(--header-height) + env(safe-area-inset-top) + 8px);
+  }
+
+  .notif-list {
+    max-height: 60vh;
+  }
+
+  .notif-item {
+    padding: 14px 16px;
+    align-items: flex-start;
+  }
+
+  .notif-item .notif-text {
+    line-height: 1.5;
+  }
+
+  .profile-dd-item {
+    min-height: 48px;
+  }
+}
+
+/* ------------------------------------------------------------
+   10. Typography scale
+   ------------------------------------------------------------ */
+
+@media (max-width: 767px) {
+  .page-header h1 {
+    letter-spacing: -0.2px;
+  }
+
+  .card-title {
+    font-size: 15px;
+  }
+
+  .stat-info h3,
+  .sa-stat-info h3,
+  .la-stat h3 {
+    font-size: 20px;
+  }
+
+  .ring {
+    width: 124px;
+    height: 124px;
+  }
+
+  .ring .ring-value {
+    font-size: 26px;
+  }
+
+  .empty-state {
+    padding: 32px 16px;
+  }
+}
+
+/* ------------------------------------------------------------
+   11. Tabs, toolbar, search
+   ------------------------------------------------------------ */
+
+@media (max-width: 767px) {
+  .tabs {
+    margin-bottom: 14px;
+    scrollbar-width: none;
+  }
+
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab {
+    min-height: 44px;
+    padding: 10px 14px;
+  }
+
+  .table-toolbar {
+    align-items: stretch;
+  }
+
+  .search-box {
+    max-width: none;
+  }
+}
+
+/* ------------------------------------------------------------
+   12. Profile page
+   ------------------------------------------------------------ */
+
+@media (max-width: 767px) {
+  .pf-hero-banner {
+    height: 108px;
+  }
+
+  .pf-hero-body {
+    padding: 0 16px 16px;
+    gap: 14px;
+    margin-top: -34px;
+  }
+
+  .pf-hero-info {
+    padding-top: 4px;
+    width: 100%;
+  }
+
+  .pf-hero-name {
+    font-size: 21px;
+  }
+
+  .pf-hero-actions {
+    width: 100%;
+  }
+
+  .pf-hero-actions .btn {
+    flex: 1;
+    min-height: 42px;
+  }
+
+  .pf-att-stats {
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 14px;
+  }
+
+  .pf-ring {
+    width: 132px;
+    height: 132px;
+  }
+
+  .pf-att-stat-grid {
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .pf-dept-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .branding-banner .college-name-block h1 {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 409px) {
+  .pf-att-stat-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ------------------------------------------------------------
+   13. Forms on login / account-create pages
+   ------------------------------------------------------------ */
+
+@media (max-width: 575px) {
+  .rpsit-brand .college-branding {
+    gap: 10px;
+  }
+
+  .rpsit-brand .college-logo {
+    width: 54px;
+  }
+
+  .rpsit-brand .college-name-block h1 {
+    font-size: 16px;
+    line-height: 1.2;
+  }
+
+  .rpsit-brand .college-name-block p {
+    font-size: 9px;
+    letter-spacing: 1.5px;
+  }
+
+  .login-card {
+    padding: 24px 18px;
+  }
+
+  .role-selector {
+    gap: 8px;
+  }
+
+  .role-option {
+    flex: 1;
+  }
+
+  .role-card {
+    padding: 12px 6px;
+  }
+
+  .role-card i {
+    font-size: 20px;
+  }
+
+  .role-card span {
+    font-size: 13px;
+  }
+}
+
+/* ------------------------------------------------------------
+   14. Camera & live monitoring
+   ------------------------------------------------------------ */
+
+.camera-stage {
+  width: 100%;
+}
+
+@media (max-width: 767px) {
+  .camera-stage,
+  .camera-stage.is-mini {
+    aspect-ratio: 16 / 9;
+    min-height: 0;
+  }
+
+  .monitor-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .live-counts {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .monitor-toolbar .btn {
+    flex: 1;
+  }
+
+  /* Big touch friendly session controls */
+  .staff-live-actions {
+    position: sticky;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    background: #fff;
+    padding: 10px 0 4px;
+    border-top: 1px solid var(--gray-100);
+    margin-top: 2px;
+  }
+
+  .staff-live-actions .btn {
+    width: 100%;
+    grid-column: span 1;
+  }
+
+  .staff-live-actions .btn:first-child:last-child {
+    grid-column: span 2;
+  }
+
+  .camera-footer {
+    font-size: 12px;
+    gap: 8px;
+  }
+}
+
+/* ------------------------------------------------------------
+   15. Timetable — day selector + mobile list
+   ------------------------------------------------------------ */
+
+.tt-mobile {
+  display: none;
+}
+
+.tt-day-picker {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 2px 2px 10px;
+  margin-bottom: 4px;
+}
+
+.tt-day-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--gray-200);
+  background: #fff;
+  color: var(--gray-600);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.tt-day-btn.is-active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.tt-day-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tt-day-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--dark);
+  margin: 2px 0 4px;
+}
+
+.tt-day-card {
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 12px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.tt-day-card .tt-time {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--primary);
+  background: var(--primary-bg);
+  border-radius: 8px;
+  padding: 6px 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 64px;
+  text-align: center;
+}
+
+.tt-day-card .tt-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.tt-day-card .tt-subj {
+  font-weight: 700;
+  color: var(--dark);
+  font-size: 14px;
+}
+
+.tt-day-card .tt-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--gray-500);
+}
+
+.tt-day-card .tt-meta i {
+  width: 16px;
+  text-align: center;
+  color: var(--gray-400);
+  margin-right: 2px;
+}
+
+@media (max-width: 767px) {
+  .tt-table-wrap {
+    display: none;
+  }
+
+  .tt-mobile {
+    display: block;
+  }
+}
+
+/* ------------------------------------------------------------
+   16. Toasts at the bottom on phones
+   ------------------------------------------------------------ */
+
+@media (max-width: 575px) {
+  .toast-container {
+    top: auto;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    left: 12px;
+    right: 12px;
+  }
+
+  .toast {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    padding: 13px 14px;
+  }
+
+  @keyframes slideIn {
+    from { transform: translateY(100%) scale(0.98); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+  }
+
+  @keyframes slideOut {
+    from { transform: translateY(0) scale(1); opacity: 1; }
+    to { transform: translateY(100%) scale(0.98); opacity: 0; }
+  }
+}
+
+/* ------------------------------------------------------------
+   17. Charts
+   ------------------------------------------------------------ */
+
+@media (max-width: 767px) {
+  .chart-container {
+    height: 230px;
+  }
+
+  .chart-container.sm {
+    height: 180px;
+  }
+}
+
+/* ------------------------------------------------------------
+   18. Pagination & misc small controls
+   ------------------------------------------------------------ */
+
+@media (max-width: 767px) {
+  .pagination button {
+    min-width: 40px;
+    height: 40px;
+    font-size: 14px;
+  }
+
+  .status-btn {
+    min-height: 40px;
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+
+  .live-toggle {
+    min-height: 40px;
+    padding: 8px 14px;
+  }
+
+  .radio-status {
+    gap: 8px;
+  }
+}
+
+/* ------------------------------------------------------------
+   19. Manual attendance + mark attendance helpers
+   ------------------------------------------------------------ */
+
+@media (max-width: 767px) {
+  .ma-bulk-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ma-bulk-bar .btn {
+    width: 100%;
+  }
+
+  .ma-edit-student {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ma-edit-current {
+    text-align: left;
+  }
+
+  .ma-session-meta {
+    gap: 8px 12px;
+    font-size: 12.5px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .flex.justify-between.items-center.mt-16 {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .flex.justify-between.items-center.mt-16 .btn {
+    width: 100%;
+  }
+
+  #mark-step-2 .filters-bar {
+    align-items: stretch;
+  }
+
+  #mark-step-2 .filters-bar .btn {
+    flex: 1;
+  }
+}
+
+/* ------------------------------------------------------------
+   20. Desktop guard rails (make sure nothing below overrides)
+   ------------------------------------------------------------ */
+
+@media (min-width: 993px) {
+  .header-brand-mobile {
+    display: none;
+  }
+
+  .main-content {
+    padding-top: calc(var(--header-height) + 28px);
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

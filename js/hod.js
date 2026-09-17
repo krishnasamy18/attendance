@@ -552,7 +552,7 @@ const HodApp = (() => {
 
       body.innerHTML = `
         <div class="table-responsive">
-          <table class="table">
+          <table class="table table-cards">
             <thead>
               <tr><th>Date</th><th>Day</th><th>Status</th><th>Check In</th><th>Check Out</th><th>Remarks</th><th>Marked By</th><th>Last Updated</th></tr>
             </thead>
@@ -1074,7 +1074,7 @@ const HodApp = (() => {
               <button class="btn btn-primary btn-sm" id="add-class"><i class="fas fa-plus"></i> Add Class</button>
             </div>
             <div class="table-responsive">
-              <table class="table">
+              <table class="table table-cards">
                 <thead><tr><th>Class ID</th><th>Class Name</th><th>Section</th></tr></thead>
                 <tbody>${rowsHtml || TableRenderer.emptyState(3, 'No Classes Added')}</tbody>
               </table>
@@ -1316,7 +1316,7 @@ const HodApp = (() => {
       <div class="card">
         <div class="card-header"><div class="card-title"><i class="fas fa-table"></i>Class-wise Detail</div></div>
         <div class="table-responsive">
-          <table class="table">
+          <table class="table table-cards">
             <thead><tr><th>Class</th><th>Total Records</th><th>Present</th><th>Absent</th><th>Late</th><th>Percentage</th></tr></thead>
             <tbody id="mon-table"></tbody>
           </table>
