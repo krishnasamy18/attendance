@@ -313,6 +313,68 @@ const ProfileApp = (() => {
     });
   };
 
+  /* ─── WhatsApp attendance report settings ───────────────── */
+
+  const waUpdate = (role, id, patch) =>
+    role === 'Student' ? DB.updateStudent(id, patch) :
+    role === 'Staff'   ? DB.updateStaff(id, patch) :
+                         DB.updateHod(id, patch);
+
+  const whatsappCard = (person, role) => {
+    const number     = person.whatsappNumber || '';
+    const usephoneOk = DB.validateWhatsAppNumber(person.phone);
+    const consent    = !!person.whatsappConsent;
+
+    return sectionCard('fa-brands fa-whatsapp', 'WhatsApp Attendance Reports', `
+      <p class="pf-wa-intro">Get a copy of your daily attendance report on WhatsApp after each attendance day.</p>
+      <div class="pf-wa-grid">
+        <div class="pf-wa-block">
+          <div class="pf-wa-label">WhatsApp Number</div>
+          <div class="pf-wa-value" id="pf-wa-number">${number ? esc2(DB.fmtWhatsApp(number)) : 'Not set'}</div>
+          <label class="pf-wa-check ${usephoneOk.ok ? '' : 'is-disabled'}">
+            <input type="checkbox" id="pf-wa-usephone" ${usephoneOk.ok ? '' : 'disabled'}>
+            <span>Use registered mobile number</span>
+            <span class="text-muted" style="margin-left:auto">${usephoneOk.ok ? esc2(DB.fmtWhatsApp(usephoneOk.phone)) : 'invalid registered number'}</span>
+          </label>
+        </div>
+        <div class="pf-wa-block">
+          <label class="pf-wa-consent">
+            <input type="checkbox" id="pf-wa-consent" ${consent ? 'checked' : ''}>
+            <span class="pf-wa-switch"></span>
+            <span>Receive daily attendance reports on WhatsApp</span>
+          </label>
+          <p class="pf-wa-hint">When enabled, your daily report is sent to the WhatsApp number above. You can turn this off anytime.</p>
+        </div>
+      </div>`, 'id="pf-whatsapp"');
+  };
+
+  const wireWhatsapp = (person, role, onChanged) => {
+    const consentEl = document.getElementById('pf-wa-consent');
+    if (consentEl) {
+      consentEl.addEventListener('change', () => {
+        const r = waUpdate(role, person.id, { whatsappConsent: consentEl.checked });
+        if (!r.ok) { Toast.error(r.message); consentEl.checked = !consentEl.checked; return; }
+        Toast.success(consentEl.checked ? 'WhatsApp reports enabled.' : 'WhatsApp reports disabled.');
+        onChanged();
+      });
+    }
+    const usePhoneEl = document.getElementById('pf-wa-usephone');
+    if (usePhoneEl) {
+      usePhoneEl.addEventListener('change', () => {
+        if (!usePhoneEl.checked) return;
+        const v = DB.validateWhatsAppNumber(person.phone);
+        if (!v.ok) { Toast.error(v.message); usePhoneEl.checked = false; return; }
+        const r = waUpdate(role, person.id, { whatsappNumber: v.phone });
+        if (!r.ok) { Toast.error(r.message); usePhoneEl.checked = false; return; }
+        Toast.success('WhatsApp number set to your registered mobile number.');
+        onChanged();
+      });
+    }
+  };
+
+  const WA_EDIT_FIELD = (value) =>
+    ({ key: 'whatsappNumber', label: 'WhatsApp Number', type: 'tel', value: value || '', placeholder: '98765 43210', hint: 'Indian mobile number for daily report delivery. Leave empty to keep current number.' });
+
   /* ─── change password modal ──────────────────────────────── */
 
   const openChangePasswordModal = (userId) => {
@@ -470,6 +532,8 @@ const ProfileApp = (() => {
 
       ${attendanceSummary(st.id)}
 
+      ${whatsappCard(st, 'Student')}
+
       <div class="pf-layout pf-grid-2">
         ${sectionCard('fa-shield-halved', 'Account & Security', `
           <div class="pf-security-body">
@@ -495,9 +559,13 @@ const ProfileApp = (() => {
           { key: 'phone',   label: 'Phone',          type: 'tel',      value: st.phone },
           { key: 'section', label: 'Section',        type: 'select',   value: st.section, options: ['A', 'B', 'UV', '—'] },
           { key: 'dob',     label: 'Date of Birth',  type: 'date',     value: st.dob, hint: 'Optional — displayed for identification only.' },
+          WA_EDIT_FIELD(st.whatsappNumber),
         ], (vals) => {
           if (!vals.name) { Toast.error('Full name is required.'); return; }
-          const result = DB.updateStudent(st.id, { name: vals.name, email: vals.email, phone: vals.phone, section: vals.section, dob: vals.dob || null });
+          if (vals.whatsappNumber && !DB.validateWhatsAppNumber(vals.whatsappNumber).ok) {
+            Toast.error(DB.validateWhatsAppNumber(vals.whatsappNumber).message); return;
+          }
+          const result = DB.updateStudent(st.id, { name: vals.name, email: vals.email, phone: vals.phone, section: vals.section, dob: vals.dob || null, whatsappNumber: vals.whatsappNumber });
           if (!result.ok) { Toast.error(result.message); return; }
           updateSessionName(result.record.name);
           Modal.close();
@@ -507,6 +575,8 @@ const ProfileApp = (() => {
         });
       });
     }
+
+    wireWhatsapp(st, 'Student', () => renderStudentProfile(mount, st.id, readOnly));
 
     // Change password
     const changePwBtn = document.getElementById('btn-change-pw');
@@ -576,6 +646,8 @@ const ProfileApp = (() => {
           </div>
         </div>`)}
 
+      ${whatsappCard(staff, 'Staff')}
+
       <div class="pf-layout pf-grid-2">
         ${securityCard(staff)}
         ${activityCard(staff)}
@@ -593,9 +665,13 @@ const ProfileApp = (() => {
           { key: 'email',        label: 'Email',         type: 'email',  value: staff.email },
           { key: 'phone',        label: 'Phone',         type: 'tel',    value: staff.phone },
           { key: 'dob',          label: 'Date of Birth', type: 'date',   value: staff.dob },
+          WA_EDIT_FIELD(staff.whatsappNumber),
         ], (vals) => {
           if (!vals.name) { Toast.error('Full name is required.'); return; }
-          const result = DB.updateStaff(staff.id, { name: vals.name, email: vals.email, phone: vals.phone, dob: vals.dob || null });
+          if (vals.whatsappNumber && !DB.validateWhatsAppNumber(vals.whatsappNumber).ok) {
+            Toast.error(DB.validateWhatsAppNumber(vals.whatsappNumber).message); return;
+          }
+          const result = DB.updateStaff(staff.id, { name: vals.name, email: vals.email, phone: vals.phone, dob: vals.dob || null, whatsappNumber: vals.whatsappNumber });
           if (!result.ok) { Toast.error(result.message); return; }
           updateSessionName(result.record.name);
           Modal.close();
@@ -605,6 +681,8 @@ const ProfileApp = (() => {
         });
       });
     }
+
+    wireWhatsapp(staff, 'Staff', () => renderStaffProfile(mount, DB.getStaff().find((f) => f.id === staff.id)));
 
     // Change password
     const changePwBtn = document.getElementById('btn-change-pw');
@@ -641,6 +719,8 @@ const ProfileApp = (() => {
 
       ${heroHTML(hod.name, 'HOD', deptName(hod.department), 'HOD ID', hod.hodId, hod.email, true, hod.hodId)}
 
+      <div id="hod-live-indicator" class="pf-live-indicator"></div>
+
       <div class="pf-layout pf-grid-2">
         <div class="pf-col-main">
           ${sectionCard('fa-user', 'Personal Information', `
@@ -674,6 +754,8 @@ const ProfileApp = (() => {
           ${statMini('fa-calendar-check', DB.getClasses().length, 'Classes', 'i-gray')}
         </div>`)}
 
+      ${whatsappCard(hod, 'HOD')}
+
       <div class="pf-layout pf-grid-2">
         ${securityCard(hod)}
         ${activityCard(hod)}
@@ -681,6 +763,7 @@ const ProfileApp = (() => {
     `;
 
     wirePhotoControls(hod.hodId, 'HOD');
+    if (window.LiveAttendance && LiveAttendance.renderHodProfileIndicator) LiveAttendance.renderHodProfileIndicator();
 
     // Edit Profile
     const editBtn = document.getElementById('btn-edit-profile');
@@ -691,9 +774,13 @@ const ProfileApp = (() => {
           { key: 'email', label: 'Email',         type: 'email',  value: hod.email },
           { key: 'phone', label: 'Phone',         type: 'tel',    value: hod.phone },
           { key: 'dob',   label: 'Date of Birth', type: 'date',   value: hod.dob },
+          WA_EDIT_FIELD(hod.whatsappNumber),
         ], (vals) => {
           if (!vals.name) { Toast.error('Full name is required.'); return; }
-          const result = DB.updateHod(hod.id, { name: vals.name, email: vals.email, phone: vals.phone, dob: vals.dob || null });
+          if (vals.whatsappNumber && !DB.validateWhatsAppNumber(vals.whatsappNumber).ok) {
+            Toast.error(DB.validateWhatsAppNumber(vals.whatsappNumber).message); return;
+          }
+          const result = DB.updateHod(hod.id, { name: vals.name, email: vals.email, phone: vals.phone, dob: vals.dob || null, whatsappNumber: vals.whatsappNumber });
           if (!result.ok) { Toast.error(result.message); return; }
           updateSessionName(result.record.name);
           Modal.close();
@@ -703,6 +790,8 @@ const ProfileApp = (() => {
         });
       });
     }
+
+    wireWhatsapp(hod, 'HOD', () => renderHodProfile(mount, DB.getHODs().find((h) => h.id === hod.id)));
 
     // Change password
     const changePwBtn = document.getElementById('btn-change-pw');

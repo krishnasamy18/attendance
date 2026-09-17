@@ -218,6 +218,15 @@ const Utils = {
     return Math.round((part / total) * 100);
   },
 
+  /* Live elapsed time (HH:MM:SS) from an ISO start timestamp. */
+  clock(iso) {
+    if (!iso) return '00:00:00';
+    const ms = Math.max(0, Date.now() - new Date(iso).getTime());
+    const s = Math.floor(ms / 1000);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${pad(Math.floor(s / 3600))}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`;
+  },
+
   pctColor(pct) {
     if (pct >= 80) return 'var(--secondary)';
     if (pct >= 75) return 'var(--warning)';
@@ -389,6 +398,7 @@ const NAV_CONFIG = {
       { route: 'student.dashboard', key: 'student-dashboard.html', icon: 'fa-gauge-high', label: 'Dashboard' },
       { route: 'attendance.view', key: 'attendance.html', icon: 'fa-clipboard-check', label: 'My Attendance' },
       { route: 'attendance.view', key: 'attendance.html?view=history', icon: 'fa-clock-rotate-left', label: 'Attendance History' },
+      { route: 'daily-report', key: 'daily-report.html', icon: 'fa-file-invoice', label: 'Daily Report' },
       { route: 'timetable', key: 'timetable.html', icon: 'fa-calendar-days', label: 'Timetable' },
       { route: 'profile', key: 'profile.html', icon: 'fa-user', label: 'Profile' }
     ]
@@ -399,6 +409,7 @@ const NAV_CONFIG = {
       { route: 'staff.dashboard', key: 'staff-dashboard.html', icon: 'fa-gauge-high', label: 'Dashboard' },
       { route: 'attendance.mark', key: 'attendance.html?mode=mark', icon: 'fa-pen-to-square', label: 'Mark Attendance' },
       { route: 'attendance.view', key: 'attendance.html', icon: 'fa-clock-rotate-left', label: 'Attendance History' },
+      { route: 'staff.daily-reports', key: 'staff-daily-reports.html', icon: 'fa-file-invoice', label: 'My Daily Reports' },
       { route: 'students', key: 'students.html', icon: 'fa-users', label: 'Students' },
       { route: 'timetable', key: 'timetable.html', icon: 'fa-calendar-days', label: 'Timetable' },
       { route: 'reports', key: 'reports.html', icon: 'fa-chart-pie', label: 'Reports' },
@@ -409,12 +420,14 @@ const NAV_CONFIG = {
     label: 'HOD',
     items: [
       { route: 'hod.dashboard', key: 'hod-dashboard.html', icon: 'fa-gauge-high', label: 'Dashboard' },
+      { route: 'hod.live-monitoring', key: 'hod-live-monitoring.html', icon: 'fa-video', label: 'Live Monitoring', live: true },
       { route: 'students.management', key: 'students.html', icon: 'fa-users', label: 'Students' },
       { route: 'staff.management', key: 'staff.html', icon: 'fa-user-tie', label: 'Staff' },
       { route: 'classes', key: 'classes.html?tab=classes', icon: 'fa-school', label: 'Classes' },
       { route: 'subjects', key: 'subjects.html', icon: 'fa-book-open', label: 'Subjects' },
       { route: 'timetable', key: 'timetable.html', icon: 'fa-calendar-days', label: 'Timetable' },
       { route: 'attendance.monitor', key: 'attendance.html?mode=monitor', icon: 'fa-chart-line', label: 'Attendance Monitoring' },
+      { route: 'daily.reports', key: 'daily-reports.html', icon: 'fa-file-invoice', label: 'Daily Reports' },
       { route: 'reports', key: 'reports.html', icon: 'fa-chart-pie', label: 'Reports' },
       { route: 'profile', key: 'profile.html', icon: 'fa-user', label: 'Profile' }
     ]
@@ -442,6 +455,7 @@ const AppLayout = {
       return `
         <a href="${it.key}" class="nav-item ${isActive ? 'active' : ''}" data-route="${it.route}">
           <i class="fas ${it.icon}"></i>${it.label}
+          ${it.live ? `<span class="nav-live-badge hidden" data-live-badge></span>` : ''}
         </a>
       `;
     }).join('');
@@ -714,6 +728,15 @@ function buildNotifications(session) {
       items.push({ icon: 'fa-bell text-muted', text: 'No classes scheduled for you today.', time: now });
     }
   } else {
+    // HOD — surface genuinely live classroom sessions first.
+    const liveSessions = (window.DB && DB.getActiveSessions) ? DB.getActiveSessions() : [];
+    liveSessions.forEach((s) => {
+      items.push({
+        icon: 'fa-video text-danger',
+        text: `${s.subjectName} (${s.classLabel}) is LIVE on ${s.cameraName}.`,
+        time: now
+      });
+    });
     const allAtt = DB.getAttendance();
     const students = DB.getStudents();
     const below = students.filter((st) => {

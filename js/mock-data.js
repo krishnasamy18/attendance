@@ -25,7 +25,11 @@ window.DB = (() => {
     subjects: 'attendance_subjects',
     classes: 'attendance_classes',
     timetable: 'attendance_timetable',
-    academicYears: 'attendance_academic_years'
+    academicYears: 'attendance_academic_years',
+    sessions: 'attendance_sessions',
+    dailyReports: 'attendance_daily_reports',
+    deliveries: 'attendance_whatsapp_deliveries',
+    reportSettings: 'attendance_report_settings'
   };
 
   // Generic academic configuration (not sample records).
@@ -37,6 +41,36 @@ window.DB = (() => {
 
   const DUPLICATE_ID = 'A record with this ID already exists.';
   const DUPLICATE_EMAIL = 'A record with this email already exists.';
+
+  /* ---------- WhatsApp number helpers ---------- */
+
+  const digitsOnly = (v) => String(v || '').replace(/\D/g, '');
+
+  const validateWhatsAppNumber = (input) => {
+    const d = digitsOnly(input);
+    if (!d) return { ok: false, phone: '', message: 'Enter a WhatsApp number.' };
+    let normalized = d;
+    if (d.length === 10) {
+      if (!/^[6-9]/.test(d)) return { ok: false, phone: '', message: 'Invalid Indian mobile number.' };
+      normalized = '91' + d;
+    } else if (d.length === 11 && d.startsWith('0')) {
+      normalized = '91' + d.slice(1);
+    } else if (d.length === 12 && d.startsWith('91')) {
+      if (!/^[6-9]/.test(d.slice(2))) return { ok: false, phone: '', message: 'Invalid Indian mobile number.' };
+    } else {
+      return { ok: false, phone: '', message: 'Enter a valid Indian mobile number (e.g., 98765 43210).' };
+    }
+    return { ok: true, phone: normalized, message: '' };
+  };
+
+  const fmtWhatsApp = (phone) => {
+    if (!phone) return '';
+    const d = String(phone).replace(/\D/g, '');
+    if (d.length === 12 && d.startsWith('91')) {
+      return `+91 ${d.slice(2, 7)} ${d.slice(7)}`;
+    }
+    return d ? '+' + d : '';
+  };
 
   const read = (key, fallback) => {
     try {
@@ -60,6 +94,338 @@ window.DB = (() => {
   const writePwOverrides = (overrides) => {
     try { localStorage.setItem('attendance_pw_overrides', JSON.stringify(overrides)); }
     catch (_e) { /* ignore */ }
+  };
+
+  /* ---------- Attendance sessions (cross-tab safe, no mirror) ----------
+     Sessions are read/written fresh from localStorage on every call so
+     that a Staff session and an HOD monitor in another tab always see
+     the same real state. */
+
+  const readSessions = () => {
+    try { return JSON.parse(localStorage.getItem(STORE_KEYS.sessions) || '[]'); }
+    catch (_e) { return []; }
+  };
+
+  const writeSessions = (list) => {
+    try { localStorage.setItem(STORE_KEYS.sessions, JSON.stringify(list)); }
+    catch (_e) { /* storage full / unavailable */ }
+  };
+
+  const ACTIVE_STATUSES = ['WAITING', 'CONNECTING', 'LIVE', 'PAUSED', 'DISCONNECTED', 'ERROR'];
+
+  const recomputeCounts = (session) => {
+    const students = session.students || [];
+    const presentCount = students.filter((s) => s.status === 'present').length;
+    const absentCount = students.filter((s) => s.status === 'absent').length;
+    const pendingCount = students.filter((s) => s.status === 'pending').length;
+    const lateCount = students.filter((s) => s.status === 'late').length;
+    const totalStudents = students.length;
+    session.totalStudents = totalStudents;
+    session.presentCount = presentCount;
+    session.absentCount = absentCount;
+    session.pendingCount = pendingCount;
+    session.lateCount = lateCount;
+    session.attendancePercentage = totalStudents ? Math.round(((presentCount + lateCount) / totalStudents) * 100) : 0;
+    return session;
+  };
+
+  /* ---------- Daily report / WhatsApp delivery stores (fresh reads) ---------- */
+
+  const readReports = () => {
+    try { return JSON.parse(localStorage.getItem(STORE_KEYS.dailyReports) || '[]'); }
+    catch (_e) { return []; }
+  };
+  const writeReports = (list) => {
+    try { localStorage.setItem(STORE_KEYS.dailyReports, JSON.stringify(list)); }
+    catch (_e) { /* storage full / unavailable */ }
+  };
+
+  const readDeliveries = () => {
+    try { return JSON.parse(localStorage.getItem(STORE_KEYS.deliveries) || '[]'); }
+    catch (_e) { return []; }
+  };
+  const writeDeliveries = (list) => {
+    try { localStorage.setItem(STORE_KEYS.deliveries, JSON.stringify(list)); }
+    catch (_e) { /* storage full / unavailable */ }
+  };
+
+  const readReportSettings = () => {
+    try {
+      const raw = localStorage.getItem(STORE_KEYS.reportSettings);
+      if (raw) return JSON.parse(raw);
+    } catch (_e) { /* fallthrough */ }
+    return { autoEnabled: false, dailyReportTime: '18:00', threshold: 75 };
+  };
+  const writeReportSettings = (cfg) => {
+    try { localStorage.setItem(STORE_KEYS.reportSettings, JSON.stringify(cfg)); }
+    catch (_e) { /* storage full / unavailable */ }
+  };
+
+  const DEFAULT_SETTINGS = { autoEnabled: false, dailyReportTime: '18:00', threshold: 75 };
+
+  /* ---------- Report id + generation helpers ---------- */
+
+  const RID_TAG = { student: 'STU', staff: 'STF', hod: 'HOD' };
+  const roleTag = (role) => RID_TAG[role] || role.toUpperCase();
+
+  const makeReportId = (role, date) => {
+    const tag = roleTag(role);
+    const seq = readReports().filter((r) => r.reportId && r.reportId.startsWith(tag + '-' + date)).length + 1;
+    return `${role.toUpperCase()}-${date}-${tag}${String(seq).padStart(3, '0')}`;
+  };
+
+  const sessionKey = (r) => `${r.classId}|${r.section || ''}|${r.subjectCode}|${r.hour}`;
+
+  const pct = (p, t) => (t ? Math.round((p / t) * 100) : 0);
+
+  const subjectNameFor = (code) => {
+    const s = subjects.find((x) => x.code === (code || '').toUpperCase());
+    return s ? s.name : String(code || '');
+  };
+
+  const classNameFor = (id) => {
+    const c = classesList.find((x) => x.id === id);
+    return c ? c.className : String(id || '');
+  };
+
+  const buildClassSummary = (records) => {
+    const out = [];
+    const byClass = {};
+    records.forEach((r) => {
+      (byClass[r.classId] = byClass[r.classId] || []).push(r);
+    });
+    Object.keys(byClass).sort().forEach((classId) => {
+      const rs = byClass[classId];
+      const present = rs.filter((r) => r.status === 'Present' || r.status === 'Late').length;
+      out.push({
+        classId,
+        className: classNameFor(classId),
+        students: new Set(rs.map((r) => r.studentId)).size,
+        present,
+        absent: rs.length - present,
+        percentage: pct(present, rs.length)
+      });
+    });
+    return out;
+  };
+
+  const buildSubjectSummary = (records) => {
+    const out = [];
+    const by = {};
+    records.forEach((r) => {
+      const key = String(r.subjectCode || '').toUpperCase();
+      (by[key] = by[key] || []).push(r);
+    });
+    Object.keys(by).sort().forEach((code) => {
+      const rs = by[code];
+      const present = rs.filter((r) => r.status === 'Present' || r.status === 'Late').length;
+      out.push({
+        subjectCode: code,
+        subjectName: subjectNameFor(code),
+        sessions: new Set(rs.map(sessionKey)).size,
+        present,
+        absent: rs.length - present,
+        percentage: pct(present, rs.length)
+      });
+    });
+    return out;
+  };
+
+  const buildStaffSummary = (records) => {
+    const out = [];
+    const by = {};
+    records.forEach((r) => {
+      (by[r.staffId] = by[r.staffId] || []).push(r);
+    });
+    Object.keys(by).forEach((staffId) => {
+      const rs = by[staffId];
+      const present = rs.filter((r) => r.status === 'Present' || r.status === 'Late').length;
+      const member = staff.find((f) => f.id === staffId);
+      out.push({
+        staffId,
+        name: member ? member.name : 'Unknown Staff',
+        sessions: new Set(rs.map(sessionKey)).size,
+        completed: new Set(rs.map(sessionKey)).size,
+        studentsHandled: new Set(rs.map((r) => r.studentId)).size,
+        present,
+        absent: rs.length - present,
+        percentage: pct(present, rs.length)
+      });
+    });
+    return out.sort((a, b) => (a.name).localeCompare(b.name));
+  };
+
+  const sessionsForDate = (date, staffId) => {
+    return readSessions().filter((s) => s.date === date && (!staffId || s.staffId === staffId));
+  };
+
+  /* ---------- Student report ---------- */
+
+  const buildStudentReport = (date, studentId) => {
+    const st = students.find((x) => x.id === studentId);
+    if (!st) return null;
+    const recs = attendanceRecords.filter((r) => r.date === date && r.studentId === studentId);
+    if (recs.length === 0) return null;
+
+    const present = recs.filter((r) => r.status === 'Present').length;
+    const absent = recs.filter((r) => r.status === 'Absent').length;
+    const late = recs.filter((r) => r.status === 'Late').length;
+
+    const all = attendanceRecords.filter((r) => r.studentId === studentId);
+    const overallPresent = all.filter((r) => r.status !== 'Absent').length;
+
+    const report = {
+      reportId: makeReportId('student', date),
+      role: 'student',
+      date,
+      studentId,
+      registerNumber: st.registerNumber,
+      name: st.name,
+      department: st.department,
+      year: st.year,
+      semester: st.semester,
+      section: st.section,
+      totalClasses: recs.length,
+      present,
+      absent,
+      late,
+      percentage: pct(present + late, recs.length),
+      overallPercentage: pct(overallPresent, all.length),
+      subjects: recs.map((r) => ({
+        subjectCode: r.subjectCode,
+        subjectName: r.subjectName || subjectNameFor(r.subjectCode),
+        hour: r.hour,
+        className: r.className || classNameFor(r.classId),
+        status: r.status
+      })).sort((a, b) => Number(a.hour) - Number(b.hour))
+    };
+    return report;
+  };
+
+  /* ---------- Staff report ---------- */
+
+  const buildStaffReport = (date, staffId) => {
+    const member = staff.find((x) => x.id === staffId);
+    if (!member) return null;
+    const recs = attendanceRecords.filter((r) => r.date === date && r.staffId === staffId);
+    if (recs.length === 0) return null;
+
+    const by = {};
+    recs.forEach((r) => {
+      const key = sessionKey(r);
+      (by[key] = by[key] || { className: '', classId: r.classId, section: r.section, subjectCode: r.subjectCode, subjectName: r.subjectName || subjectNameFor(r.subjectCode), hour: r.hour, records: [] }).records.push(r);
+      by[key].className = by[key].className || r.className || classNameFor(r.classId);
+    });
+
+    const sessions = Object.values(by).sort((a, b) => Number(a.hour) - Number(b.hour)).map((g) => {
+      const present = g.records.filter((r) => r.status === 'Present' || r.status === 'Late').length;
+      return {
+        className: g.className,
+        classId: g.classId,
+        section: g.section,
+        subjectCode: g.subjectCode,
+        subjectName: g.subjectName,
+        hour: g.hour,
+        students: g.records.length,
+        present,
+        absent: g.records.length - present,
+        status: 'Completed'
+      };
+    });
+
+    const dayAbbr = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(date + 'T00:00:00').getDay()];
+    const handledKeys = new Set(recs.map(sessionKey));
+    const assignedCodes = (member.subjects || []).map((n) => {
+      const s = subjects.find((x) => x.name === n);
+      return s ? s.code : null;
+    }).filter(Boolean);
+    const pendingRecs = timetableRecords.filter((t) => {
+      return t.day === dayAbbr && (assignedCodes.length ? assignedCodes.includes(t.subjectCode) : true) &&
+             (!member.classes || member.classes.length === 0 || member.classes.includes(t.classId)) &&
+             !handledKeys.has(`${t.classId}|${t.section || ''}|${t.subjectCode}|${t.hour}`);
+    });
+
+    const totalStudents = sessions.reduce((a, s) => a + s.students, 0);
+    const present = sessions.reduce((a, s) => a + s.present, 0);
+    const absent = sessions.reduce((a, s) => a + s.absent, 0);
+
+    const camSessions = sessionsForDate(date, staffId);
+    const cameraCompleted = camSessions.filter((s) => s.status === 'COMPLETED').length;
+    const cameraFailed = camSessions.filter((s) => s.status === 'ERROR' || s.status === 'PAUSED' || s.status === 'DISCONNECTED' || (s.camera && (s.camera.status === 'error' || s.camera.status === 'disconnected' && s.status === 'COMPLETED'))).length;
+
+    return {
+      reportId: makeReportId('staff', date),
+      role: 'staff',
+      date,
+      staffId,
+      staffName: member.name,
+      staffCode: member.staffId,
+      department: member.department,
+      sessions,
+      completedSessions: sessions.length,
+      pendingSessions: pendingRecs.length,
+      totalStudents,
+      present,
+      absent,
+      percentage: pct(present, present + absent),
+      cameraSessionsCompleted: cameraCompleted,
+      cameraSessionsFailed: cameraFailed
+    };
+  };
+
+  /* ---------- HOD report ---------- */
+
+  const buildHODReport = (date, hodId) => {
+    const hod = hods.find((x) => x.id === hodId);
+    if (!hod) return null;
+    const records = attendanceRecords.filter((r) => r.date === date);
+    if (records.length === 0) return null;
+
+    const camSessions = sessionsForDate(date);
+    const completed = camSessions.filter((s) => s.status === 'COMPLETED').length;
+    const interrupted = camSessions.filter((s) => s.status !== 'COMPLETED' || (s.camera && s.camera.status === 'error') || (s.camera && s.camera.status === 'disconnected')) .length;
+
+    const threshold = (readReportSettings() || DEFAULT_SETTINGS).threshold || 75;
+    const alerts = students.map((st) => {
+      const all = attendanceRecords.filter((r) => r.studentId === st.id);
+      if (!all.length) return null;
+      const present = all.filter((r) => r.status !== 'Absent').length;
+      const percentage = pct(present, all.length);
+      if (percentage >= threshold) return null;
+      return { studentId: st.id, registerNumber: st.registerNumber, name: st.name, percentage };
+    }).filter(Boolean);
+
+    const cameraIssues = camSessions.map((s) => ({
+      sessionId: s.sessionId,
+      className: s.classLabel,
+      subjectName: s.subjectName,
+      cameraName: s.cameraName,
+      status: s.status,
+      cameraStatus: s.camera ? s.camera.status : 'unknown'
+    }));
+
+    return {
+      reportId: makeReportId('hod', date),
+      role: 'hod',
+      date,
+      hodId,
+      hodName: hod.name,
+      hodCode: hod.hodId,
+      departmentId: hod.department || 'dept-ai',
+      department: hod.department || 'AI&DS',
+      totalStudents: students.length,
+      totalStaff: staff.length,
+      totalClasses: classesList.length,
+      totalSessions: new Set(records.map(sessionKey)).size,
+      completedSessions: completed || new Set(records.map(sessionKey)).size,
+      interruptedSessions: interrupted,
+      departmentPercentage: pct(records.filter((r) => r.status === 'Present' || r.status === 'Late').length, records.length),
+      classSummary: buildClassSummary(records),
+      subjectSummary: buildSubjectSummary(records),
+      staffSummary: buildStaffSummary(records),
+      alerts,
+      cameraIssues
+    };
   };
 
   /* ---------- In-memory mirrors (loaded from localStorage) ---------- */
@@ -196,6 +562,8 @@ window.DB = (() => {
         section: String(data.section || '').trim(),
         email: String(data.email || '').trim(),
         phone: String(data.phone || '').trim(),
+        whatsappNumber: (validateWhatsAppNumber(data.whatsappNumber).ok ? data.whatsappNumber : '').trim(),
+        whatsappConsent: !!data.whatsappConsent,
         status: 'Active',
         createdAt: today()
       };
@@ -224,6 +592,15 @@ window.DB = (() => {
       current.section = String(data.section ?? current.section).trim();
       current.email = String(data.email ?? current.email).trim();
       current.phone = String(data.phone ?? current.phone).trim();
+      if (data.whatsappNumber !== undefined) {
+        if (String(data.whatsappNumber).trim() === '') {
+          current.whatsappNumber = '';
+        } else {
+          const v = validateWhatsAppNumber(data.whatsappNumber);
+          if (v.ok) current.whatsappNumber = v.phone;
+        }
+      }
+      if (data.whatsappConsent !== undefined) current.whatsappConsent = !!data.whatsappConsent;
       current.dob = data.dob ?? current.dob;
       current.lastUpdated = today();
       if (regChanged) {
@@ -264,6 +641,8 @@ window.DB = (() => {
         classes: Array.isArray(data.classes) ? data.classes.map(String) : [],
         email: String(data.email || '').trim(),
         phone: String(data.phone || '').trim(),
+        whatsappNumber: (validateWhatsAppNumber(data.whatsappNumber).ok ? data.whatsappNumber : '').trim(),
+        whatsappConsent: !!data.whatsappConsent,
         status: 'Active',
         createdAt: today()
       };
@@ -291,6 +670,15 @@ window.DB = (() => {
       current.classes = Array.isArray(data.classes) ? data.classes.map(String) : current.classes;
       current.email = String(data.email ?? current.email).trim();
       current.phone = String(data.phone ?? current.phone).trim();
+      if (data.whatsappNumber !== undefined) {
+        if (String(data.whatsappNumber).trim() === '') {
+          current.whatsappNumber = '';
+        } else {
+          const v = validateWhatsAppNumber(data.whatsappNumber);
+          if (v.ok) current.whatsappNumber = v.phone;
+        }
+      }
+      if (data.whatsappConsent !== undefined) current.whatsappConsent = !!data.whatsappConsent;
       current.dob = data.dob ?? current.dob;
       current.lastUpdated = today();
       if (idChanged) {
@@ -328,6 +716,8 @@ window.DB = (() => {
         designation: 'Head of Department',
         email: String(data.email || '').trim(),
         phone: String(data.phone || '').trim(),
+        whatsappNumber: (validateWhatsAppNumber(data.whatsappNumber).ok ? data.whatsappNumber : '').trim(),
+        whatsappConsent: !!data.whatsappConsent,
         status: 'Active',
         createdAt: today()
       };
@@ -352,6 +742,15 @@ window.DB = (() => {
       current.name = String(data.name ?? current.name).trim();
       current.email = String(data.email ?? current.email).trim();
       current.phone = String(data.phone ?? current.phone).trim();
+      if (data.whatsappNumber !== undefined) {
+        if (String(data.whatsappNumber).trim() === '') {
+          current.whatsappNumber = '';
+        } else {
+          const v = validateWhatsAppNumber(data.whatsappNumber);
+          if (v.ok) current.whatsappNumber = v.phone;
+        }
+      }
+      if (data.whatsappConsent !== undefined) current.whatsappConsent = !!data.whatsappConsent;
       current.dob = data.dob ?? current.dob;
       current.lastUpdated = today();
       if (idChanged) {
@@ -466,6 +865,364 @@ window.DB = (() => {
       writePwOverrides(overrides);
       persistAll();
       return { success: true, message: 'Password updated successfully.' };
+    },
+
+    /* ===== Attendance Sessions (live camera monitoring) ===== */
+
+    createAttendanceSession: (payload) => {
+      const date = payload.date || today();
+      const classId = String(payload.classId || '').trim();
+      const section = String(payload.section || '').trim();
+      const subjectCode = String(payload.subjectCode || '').trim().toUpperCase();
+      const hour = String(payload.hour || '').trim();
+
+      // Duplicate guard — one live session per class + subject + hour per day.
+      const existing = readSessions().some(
+        (s) => s.date === date && s.classId === classId && s.section === section &&
+               s.subjectCode === subjectCode && s.hour === hour && ACTIVE_STATUSES.includes(s.status)
+      );
+      if (existing) return null;
+
+      const sessionStudents = Array.isArray(payload.students) && payload.students.length
+        ? payload.students
+        : students.filter((s) => s.year === (payload.classLabel || classId) && s.section === section)
+            .map((s) => ({ studentId: s.id, registerNumber: s.registerNumber, name: s.name, section: s.section, status: 'pending', timestamp: null, method: null }));
+
+      const session = {
+        sessionId: uid('sess'),
+        staffId: String(payload.staffId || '').trim(),
+        staffName: String(payload.staffName || '').trim(),
+        classId,
+        classLabel: String(payload.classLabel || classId).trim(),
+        section,
+        subjectCode,
+        subjectName: String(payload.subjectName || subjectCode).trim(),
+        hour,
+        room: String(payload.room || '').trim(),
+        cameraId: String(payload.cameraId || 'cam-classroom-01').trim(),
+        cameraName: String(payload.cameraName || 'Classroom Camera 01').trim(),
+        date,
+        status: 'WAITING',
+        startedAt: new Date().toISOString(),
+        endedAt: null,
+        students: sessionStudents,
+        camera: {
+          cameraId: String(payload.cameraId || 'cam-classroom-01').trim(),
+          status: 'disconnected',
+          connectionQuality: null,
+          lastSignal: null,
+          message: 'Waiting for classroom camera connection…'
+        }
+      };
+
+      recomputeCounts(session);
+
+      const list = readSessions();
+      list.push(session);
+      writeSessions(list);
+      return session;
+    },
+
+    getActiveSessions: () => {
+      const now = today();
+      return readSessions()
+        .filter((s) => s.date === now && ACTIVE_STATUSES.includes(s.status))
+        .map((s) => ({ ...s }));
+    },
+
+    getRecentSessions: (limit) => {
+      const all = readSessions();
+      return all
+        .sort((a, b) => String(b.startedAt).localeCompare(String(a.startedAt)))
+        .slice(0, limit || 10)
+        .map((s) => ({ ...s }));
+    },
+
+    getSessionById: (id) => {
+      const session = readSessions().find((s) => s.sessionId === id);
+      return session ? { ...session } : null;
+    },
+
+    applyAttendanceEvent: (sessionId, studentId, status) => {
+      const list = readSessions();
+      const session = list.find((s) => s.sessionId === sessionId);
+      if (!session) return null;
+      if (!['present', 'absent', 'late', 'pending'].includes(status)) return null;
+
+      const student = (session.students || []).find((st) => st.studentId === studentId);
+      if (!student) return null;
+
+      student.status = status;
+      student.timestamp = new Date().toISOString();
+      student.method = status === 'pending' ? null : 'manual';
+
+      recomputeCounts(session);
+      writeSessions(list);
+
+      return {
+        session: { ...session },
+        event: { sessionId, studentId, status, timestamp: student.timestamp, method: student.method }
+      };
+    },
+
+    setCameraStatus: (sessionId, status, message) => {
+      const list = readSessions();
+      const session = list.find((s) => s.sessionId === sessionId);
+      if (!session) return null;
+
+      const previousStatus = session.camera.status;
+      session.camera.status = status;
+      session.camera.lastSignal = new Date().toISOString();
+      session.camera.connectionQuality = status === 'connected' ? 'excellent' : null;
+      if (message !== undefined) session.camera.message = message;
+
+      writeSessions(list);
+      return { session: { ...session }, previousStatus };
+    },
+
+    setSessionStatus: (sessionId, status) => {
+      const list = readSessions();
+      const session = list.find((s) => s.sessionId === sessionId);
+      if (!session) return null;
+      if (!['WAITING', 'CONNECTING', 'LIVE', 'PAUSED', 'DISCONNECTED', 'ERROR', 'COMPLETED'].includes(status)) return null;
+
+      session.status = status;
+      if (status === 'COMPLETED') session.endedAt = new Date().toISOString();
+
+      writeSessions(list);
+      return { ...session };
+    },
+
+    completeAttendanceSession: (sessionId) => {
+      const list = readSessions();
+      const session = list.find((s) => s.sessionId === sessionId);
+      if (!session) return null;
+      if (session.status === 'COMPLETED') return null;
+
+      // Any student left pending when the session ends is marked absent.
+      (session.students || []).forEach((st) => {
+        if (st.status === 'pending') {
+          st.status = 'absent';
+          st.timestamp = new Date().toISOString();
+          st.method = 'camera-attendance';
+        }
+      });
+
+      recomputeCounts(session);
+      session.status = 'COMPLETED';
+      session.endedAt = new Date().toISOString();
+      writeSessions(list);
+
+      // Persist the concrete attendance records for the completed session.
+      const subject = subjects.find((s) => s.code === session.subjectCode);
+      const cls = classesList.find((c) => c.id === session.classId);
+      (session.students || []).forEach((st) => {
+        if (st.status !== 'present' && st.status !== 'absent' && st.status !== 'late') return;
+        const alreadySaved = attendanceRecords.some(
+          (r) => r.sessionId === session.sessionId && r.studentId === st.studentId
+        );
+        if (alreadySaved) return;
+        attendanceRecords.push({
+          id: uid('att'),
+          sessionId: session.sessionId,
+          date: session.date,
+          studentId: st.studentId,
+          studentName: st.name,
+          registerNumber: st.registerNumber,
+          subjectCode: session.subjectCode,
+          subjectName: subject ? subject.name : session.subjectName,
+          classId: session.classId,
+          className: cls ? cls.className : session.classLabel,
+          semester: cls ? cls.label : session.classLabel,
+          section: session.section,
+          hour: session.hour,
+          status: st.status === 'late' ? 'Late' : st.status === 'present' ? 'Present' : 'Absent',
+          staffId: session.staffId,
+          source: 'camera-attendance'
+        });
+      });
+      persistAll();
+
+      return {
+        session: { ...session },
+        presentCount: session.presentCount,
+        absentCount: session.absentCount
+      };
+    },
+
+    /* ===== Daily Reports & WhatsApp Delivery ===== */
+
+    validateWhatsAppNumber,
+    fmtWhatsApp,
+
+    reportExists: (date, role, userId) => {
+      const key = role === 'student' ? 'studentId' : role === 'staff' ? 'staffId' : 'hodId';
+      return !!readReports().find((r) => r.role === role && r.date === date && r[key] === userId);
+    },
+
+    getDailyReportByUser: (date, role, userId) => {
+      const key = role === 'student' ? 'studentId' : role === 'staff' ? 'staffId' : 'hodId';
+      return readReports().find((r) => r.role === role && r.date === date && r[key] === userId) || null;
+    },
+
+    getDailyReportById: (reportId) => {
+      return readReports().find((r) => r.reportId === reportId) || null;
+    },
+
+    generateStudentReport: (date, studentId) => {
+      const report = buildStudentReport(date, studentId);
+      if (!report) return null;
+      const list = readReports();
+      const existing = list.find((r) => r.role === 'student' && r.date === date && r.studentId === studentId);
+      if (existing) return existing;
+      list.push(report);
+      writeReports(list);
+      return report;
+    },
+
+    generateStaffReport: (date, staffId) => {
+      const report = buildStaffReport(date, staffId);
+      if (!report) return null;
+      const list = readReports();
+      const existing = list.find((r) => r.role === 'staff' && r.date === date && r.staffId === staffId);
+      if (existing) return existing;
+      list.push(report);
+      writeReports(list);
+      return report;
+    },
+
+    generateHODReport: (date, hodId) => {
+      const report = buildHODReport(date, hodId);
+      if (!report) return null;
+      const list = readReports();
+      const existing = list.find((r) => r.role === 'hod' && r.date === date && r.hodId === hodId);
+      if (existing) return existing;
+      list.push(report);
+      writeReports(list);
+      return report;
+    },
+
+    generateAllDailyReports: (date) => {
+      const list = readReports();
+      const target = date || today();
+      const generated = [];
+      let skipped = 0;
+
+      students.forEach((st) => {
+        if (!attendanceRecords.some((r) => r.date === target && r.studentId === st.id)) { skipped++; return; }
+        if (list.some((r) => r.role === 'student' && r.date === target && r.studentId === st.id)) { skipped++; return; }
+        const report = buildStudentReport(target, st.id);
+        if (report) { list.push(report); generated.push(report); }
+      });
+
+      staff.forEach((f) => {
+        if (!attendanceRecords.some((r) => r.date === target && r.staffId === f.id)) { skipped++; return; }
+        if (list.some((r) => r.role === 'staff' && r.date === target && r.staffId === f.id)) { skipped++; return; }
+        const report = buildStaffReport(target, f.id);
+        if (report) { list.push(report); generated.push(report); }
+      });
+
+      hods.forEach((h) => {
+        if (!attendanceRecords.some((r) => r.date === target)) { skipped++; return; }
+        if (list.some((r) => r.role === 'hod' && r.date === target && r.hodId === h.id)) { skipped++; return; }
+        const report = buildHODReport(target, h.id);
+        if (report) { list.push(report); generated.push(report); }
+      });
+
+      writeReports(list);
+      return { ok: true, generated: generated.length, skipped, reports: generated };
+    },
+
+    getDailyReports: (filters = {}) => {
+      let list = readReports();
+      if (filters.date) list = list.filter((r) => r.date === filters.date);
+      if (filters.role) list = list.filter((r) => r.role === filters.role);
+      if (filters.role !== 'student' && filters.staffId) list = list.filter((r) => r.staffId === filters.staffId);
+      if (filters.role === 'student') {
+        if (filters.classId) list = list.filter((r) => {
+          const st = students.find((x) => x.id === r.studentId);
+          return st && st.year === filters.classId;
+        });
+        if (filters.section) list = list.filter((r) => {
+          const st = students.find((x) => x.id === r.studentId);
+          return st && st.section === filters.section;
+        });
+        if (filters.q) {
+          const q = filters.q.trim().toLowerCase();
+          list = list.filter((r) => (r.registerNumber + ' ' + r.name + ' ' + r.section).toLowerCase().includes(q));
+        }
+      }
+      return list.map((r) => ({ ...r }));
+    },
+
+    getReportSettings: () => ({ ...(readReportSettings() || DEFAULT_SETTINGS) }),
+
+    saveReportSettings: (patch) => {
+      const cfg = { ...DEFAULT_SETTINGS, ...(readReportSettings() || DEFAULT_SETTINGS), ...patch };
+      if (cfg.dailyReportTime && !/^\d{2}:\d{2}$/.test(cfg.dailyReportTime)) {
+        return { ok: false, message: 'Report time must be a valid HH:MM value.' };
+      }
+      writeReportSettings(cfg);
+      return { ok: true, message: 'Report settings saved.', settings: { ...cfg } };
+    },
+
+    createDelivery: (rec) => {
+      const list = readDeliveries();
+      const record = {
+        deliveryId: uid('del'),
+        reportId: rec.reportId,
+        reportRole: rec.reportRole,
+        recipientId: rec.recipientId,
+        recipientRole: rec.recipientRole,
+        recipientName: rec.recipientName,
+        recipientCode: rec.recipientCode,
+        phoneNumber: rec.phoneNumber,
+        date: rec.date,
+        status: 'queued',
+        sentAt: null,
+        deliveredAt: null,
+        readAt: null,
+        recordedAt: new Date().toISOString(),
+        error: rec.error || ''
+      };
+      list.push(record);
+      writeDeliveries(list);
+      return { ...record };
+    },
+
+    updateDelivery: (deliveryId, patch) => {
+      const list = readDeliveries();
+      const idx = list.findIndex((d) => d.deliveryId === deliveryId);
+      if (idx === -1) return null;
+      Object.assign(list[idx], patch);
+      writeDeliveries(list);
+      return { ...list[idx] };
+    },
+
+    getDeliveries: (filters = {}) => {
+      let list = readDeliveries();
+      if (filters.date) list = list.filter((d) => d.date === filters.date);
+      if (filters.role) list = list.filter((d) => d.recipientRole === filters.role);
+      if (filters.status) list = list.filter((d) => d.status === filters.status);
+      if (filters.q) {
+        const q = filters.q.trim().toLowerCase();
+        list = list.filter((d) =>
+          (d.recipientName + ' ' + d.recipientCode + ' ' + d.phoneNumber + ' ' + d.reportRole).toLowerCase().includes(q));
+      }
+      return list.map((r) => ({ ...r })).sort((a, b) => String(b.recordedAt).localeCompare(String(a.recordedAt)));
+    },
+
+    getDeliveryStats: (date) => {
+      const deliveries = readDeliveries().filter((d) => d.date === date);
+      const sentStatuses = ['sent', 'delivered', 'read'];
+      const deliveredStatuses = ['delivered', 'read'];
+      return {
+        generated: readReports().filter((r) => r.date === date).length,
+        sent: deliveries.filter((d) => sentStatuses.includes(d.status)).length,
+        delivered: deliveries.filter((d) => deliveredStatuses.includes(d.status)).length,
+        failed: deliveries.filter((d) => d.status === 'failed').length,
+        queued: deliveries.filter((d) => d.status === 'queued' || d.status === 'sending').length
+      };
     },
 
     /* ===== Maintenance ===== */

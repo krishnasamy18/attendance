@@ -128,7 +128,8 @@ const StaffApp = (() => {
           <td class="actions">
             ${submitted
               ? `<a class="btn btn-sm btn-outline" href="attendance.html"><i class="fas fa-eye"></i>View</a>`
-              : `<a class="btn btn-sm btn-primary" href="attendance.html?mode=mark&class=${c.classId}&subject=${c.subjectCode}"><i class="fas fa-pen-to-square"></i>Mark Attendance</a>`}
+              : `<a class="btn btn-sm btn-primary" href="attendance.html?mode=mark&class=${c.classId}&subject=${c.subjectCode}"><i class="fas fa-pen-to-square"></i>Mark Attendance</a>
+                 <button type="button" class="btn btn-sm btn-camera" onclick="window.LiveAttendance && LiveAttendance.openStartSessionModal('${esc(c.classId)}','${esc(c.subjectCode)}','${esc(c.room)}')"><i class="fas fa-video"></i>Camera</button>`}
           </td>
         </tr>
       `;
